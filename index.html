@@ -281,6 +281,10 @@
                 <div class="stat-value" id="resBaseAddr">-</div>
             </div>
             <div class="stat-box">
+                <div class="stat-label">结束地址 (End Address)</div>
+                <div class="stat-value" id="resEndAddr">-</div>
+            </div>
+            <div class="stat-box">
                 <div class="stat-label">入口地址 / PC (Type 05/03)</div>
                 <div class="stat-value" id="resEntryPoint">-</div>
             </div>
@@ -292,6 +296,10 @@
             <div class="stat-box">
                 <div class="stat-label">总数据量 (Bytes)</div>
                 <div class="stat-value" id="resTotalSize">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">总记录数 (Records)</div>
+                <div class="stat-value" id="resTotalRecords">-</div>
             </div>
         </div>
 
@@ -402,11 +410,13 @@
             let extSegment = 0;
             let minAddr = 0xFFFFFFFF;
             let maxAddr = 0;
+            let maxEndAddr = 0;
             let dataAtMinAddr = null;
             let startLinearAddr = null;
             let totalDataBytes = 0;
             let checksumErrorCount = 0;
             let isEofFound = false;
+            let validRecordCount = 0;
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
@@ -422,6 +432,8 @@
                     tbody.appendChild(tr);
                     continue;
                 }
+
+                validRecordCount++;
 
                 // 拆解结构
                 const mark = line.substring(0, 1);
@@ -497,6 +509,9 @@
                     if (absoluteAddr > maxAddr) {
                         maxAddr = absoluteAddr;
                     }
+                    if ((absoluteAddr + len - 1) > maxEndAddr) {
+                        maxEndAddr = absoluteAddr + len - 1;
+                    }
                 }
 
                 // 地址列
@@ -527,6 +542,10 @@
                 ? "0x" + minAddr.toString(16).toUpperCase().padStart(8, '0')
                 : "未找到数据";
 
+            document.getElementById('resEndAddr').textContent = hasData 
+                ? "0x" + maxEndAddr.toString(16).toUpperCase().padStart(8, '0')
+                : "未找到数据";
+
             document.getElementById('resEntryPoint').textContent = startLinearAddr !== null
                 ? "0x" + startLinearAddr.toString(16).toUpperCase().padStart(8, '0')
                 : "未提供 (无Type 05)";
@@ -543,6 +562,7 @@
             }
 
             document.getElementById('resTotalSize').textContent = totalDataBytes.toLocaleString() + " 字节";
+            document.getElementById('resTotalRecords').textContent = validRecordCount.toLocaleString() + " 条";
         }
 
         function searchAddress() {
