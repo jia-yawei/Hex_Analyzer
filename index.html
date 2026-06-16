@@ -113,6 +113,63 @@
             border: 1px solid var(--border-color);
             padding: 8px 12px;
             border-radius: 6px;
+            position: relative;
+            cursor: help;
+            transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-color: var(--primary-color);
+        }
+
+        .stat-box::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background-color: rgba(30, 30, 30, 0.9);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: normal;
+            width: max-content;
+            max-width: 250px;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-weight: normal;
+            line-height: 1.4;
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(30, 30, 30, 0.9) transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .stat-box:hover::after,
+        .stat-box:hover::before {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-8px);
         }
 
         .stat-value {
@@ -272,32 +329,32 @@
     <div class="container" id="resultsContainer" style="display: none;">
         <h3 style="margin: 0;">🛠️ hex分析概览</h3>
         <div class="summary-panel">
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="指示文件结构是否完整，以及每条记录的校验和是否正确计算无误。">
                 <div class="stat-label">文件状态与校验和</div>
                 <div class="stat-value" id="resStatus">-</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="Hex 文件中第一条有效数据所在的物理起始地址。">
                 <div class="stat-label">基地址 (Base Address)</div>
                 <div class="stat-value" id="resBaseAddr">-</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="Hex 文件中最后一条有效数据所在的物理结束地址（起始地址 + 数据长度 - 1）。">
                 <div class="stat-label">结束地址 (End Address)</div>
                 <div class="stat-value" id="resEndAddr">-</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="程序的执行入口地址。对于Type 05表示ARM等架构的初始PC指针，对于Type 03表示x86架构的初始CS:IP。">
                 <div class="stat-label">入口地址 / PC (Type 05/03)</div>
                 <div class="stat-value" id="resEntryPoint">-</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="基于ARM Cortex-M架构规范，从基地址的前4个字节推测出的初始栈指针(SP)数值。">
                 <div class="stat-label">初始栈指针 (SP) 推测 *</div>
                 <div class="stat-value" id="resStackPointer">-</div>
                 <div style="font-size:10px;color:#888;margin-top:4px;">* 假设为ARM Cortex-M小端架构，读取基址前4字节</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="所有有效数据记录（Type 00）中包含的实际数据字节总数。">
                 <div class="stat-label">总数据量 (Bytes)</div>
                 <div class="stat-value" id="resTotalSize">-</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box" data-tooltip="Hex文件中成功解析出的有效记录总条数。">
                 <div class="stat-label">总记录数 (Records)</div>
                 <div class="stat-value" id="resTotalRecords">-</div>
             </div>
