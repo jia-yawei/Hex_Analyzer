@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intel HEX 文件分析工具</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333333;
+            --panel-bg: #ffffff;
+            --border-color: #dcdfe6;
+            --primary-color: #409eff;
+            --hover-color: #66b1ff;
+            --mark-color: #909399;
+            --len-color: #409eff;
+            --addr-color: #67c23a;
+            --type-color: #e6a23c;
+            --data-color: #f56c6c;
+            --csum-color: #8e44ad;
+            --error-color: #f56c6c;
+            --success-color: #67c23a;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            gap: 10px;
+        }
+
+        h1 {
+            margin-top: 5px;
+            margin-bottom: 0;
+            color: #303133;
+            font-size: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: var(--panel-bg);
+            padding: 12px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+
+        #resultsContainer {
+            flex-grow: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background-color: var(--hover-color);
+        }
+
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 15px;
+            width: 250px;
+            outline: none;
+        }
+        
+        .search-box:focus {
+            border-color: var(--primary-color);
+        }
+
+        .summary-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .stat-box {
+            background-color: #fafafa;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #303133;
+            margin-top: 2px;
+            font-family: 'Consolas', monospace;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #909399;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 8px 10px;
+            background-color: #fafafa;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .color-box { width: 12px; height: 12px; border-radius: 2px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 16px; /* Slightly reduced to show more rows */
+            margin-top: 5px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 1px solid #ebeef5;
+        }
+
+        th {
+            background-color: #f2f6fc;
+            color: #606266;
+            position: sticky;
+            top: 0;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background-color: #f5f7fa;
+        }
+
+        .highlight-row {
+            background-color: #e6f7ff !important;
+            transition: background-color 0.5s;
+        }
+
+        .table-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            min-height: 0; /* needed for flex scrolling */
+        }
+
+        /* Syntax coloring */
+        .c-mark { color: var(--mark-color); margin-right: 6px; }
+        .c-len { color: var(--len-color); font-weight: bold; margin-right: 6px; }
+        .c-addr { color: var(--addr-color); font-weight: bold; margin-right: 6px; }
+        .c-type { color: var(--type-color); font-weight: bold; margin-right: 6px; }
+        .c-data { color: var(--data-color); word-break: break-all; margin-right: 6px; }
+        .c-csum { color: var(--csum-color); font-weight: bold; }
+        
+        .valid { color: var(--success-color); }
+        .invalid { color: var(--error-color); font-weight: bold; }
+        
+        /* Toast styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            width: auto;
+            max-width: 90%;
+        }
+        .toast-message {
+            background-color: #ffffff;
+            border: 1px solid #ebeef5;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px 0 rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 320px;
+            font-size: 14px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            box-sizing: border-box;
+        }
+        .toast-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast-message.toast-error {
+            border-color: #fde2e2;
+            background-color: #fef0f0;
+            color: #f56c6c;
+        }
+        .toast-message.toast-success {
+            border-color: #e1f3d8;
+            background-color: #f0f9eb;
+            color: #67c23a;
+        }
+        .toast-message.toast-warning {
+            border-color: #faecd8;
+            background-color: #fdf6ec;
+            color: #e6a23c;
+        }
+        .toast-message.toast-info {
+            border-color: #e8f4ff;
+            background-color: #ecf5ff;
+            color: #409eff;
+        }
+        .closest-highlight-row {
+            background-color: #fff7e6 !important; /* 淡黄色高亮，用于未精确匹配的跳转 */
+            transition: background-color 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Intel HEX 文件综合分析工具</h1>
+
+    <div class="container" style="flex-shrink: 0; padding: 10px 15px;">
+        <div class="controls">
+            <button class="btn" onclick="document.getElementById('fileInput').click()">导入 HEX 文件</button>
+            <input type="file" id="fileInput" accept=".hex,.txt" onchange="handleFileSelect(event)">
+            <button class="btn" style="background-color: #909399;" onclick="clearAll()">清空重置</button>
+            <div style="flex-grow: 1;"></div>
+            <input type="text" id="addressSearch" class="search-box" placeholder="输入地址 (如 08000000) 查找数据" onkeydown="if(event.key === 'Enter') searchAddress()">
+            <button class="btn" onclick="searchAddress()">搜索地址</button>
+        </div>
+    </div>
+
+    <div class="container" id="resultsContainer" style="display: none;">
+        <h3 style="margin: 0;">🛠️ hex分析概览</h3>
+        <div class="summary-panel">
+            <div class="stat-box">
+                <div class="stat-label">文件状态与校验和</div>
+                <div class="stat-value" id="resStatus">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">基地址 (Base Address)</div>
+                <div class="stat-value" id="resBaseAddr">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">入口地址 / PC (Type 05/03)</div>
+                <div class="stat-value" id="resEntryPoint">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">初始栈指针 (SP) 推测 *</div>
+                <div class="stat-value" id="resStackPointer">-</div>
+                <div style="font-size:10px;color:#888;margin-top:4px;">* 假设为ARM Cortex-M小端架构，读取基址前4字节</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">总数据量 (Bytes)</div>
+                <div class="stat-value" id="resTotalSize">-</div>
+            </div>
+        </div>
+
+        <h3>📝 字段解析明细</h3>
+        <div class="legend">
+            <div class="legend-item"><div class="color-box" style="background-color: var(--mark-color)"></div> 记录起始标志 (:)</div>
+            <div class="legend-item"><div class="color-box" style="background-color: var(--len-color)"></div> 数据长度 (Length)</div>
+            <div class="legend-item"><div class="color-box" style="background-color: var(--addr-color)"></div> 偏移地址 (Offset)</div>
+            <div class="legend-item"><div class="color-box" style="background-color: var(--type-color)"></div> 记录类型 (Type)</div>
+            <div class="legend-item"><div class="color-box" style="background-color: var(--data-color)"></div> 数据域 (Data)</div>
+            <div class="legend-item"><div class="color-box" style="background-color: var(--csum-color)"></div> 校验和 (Checksum)</div>
+        </div>
+
+        <div class="table-container">
+            <table id="detailsTable">
+                <thead>
+                    <tr>
+                        <th width="50">行号</th>
+                        <th>HEX 源指令分段展示</th>
+                        <th width="150">记录类型说明</th>
+                        <th width="120">解析出地址</th>
+                        <th width="80">校验状态</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                analyzeHexFromText(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(message, type = 'info') {
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast-message toast-${type}`;
+            
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'warning') icon = '⚠️';
+            if (type === 'error') icon = '❌';
+            
+            toast.innerHTML = `<span style="font-size: 16px; flex-shrink: 0;">${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            
+            // Trigger reflow to apply transition
+            toast.offsetHeight;
+            
+            // Add show class to fade in and slide down
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                    if (container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
+            }, 3500);
+        }
+
+        function clearAll() {
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('addressSearch').value = '';
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = ''; // 清空解析表格行，防止残留数据被旧搜索匹配且无提示的Bug
+        }
+
+        const RECORD_TYPES = {
+            '00': 'Data (数据记录)',
+            '01': 'End Of File (文件结束)',
+            '02': 'Extended Segment Address (段地址)',
+            '03': 'Start Segment Address (初始CS:IP)',
+            '04': 'Extended Linear Address (线性宽地址)',
+            '05': 'Start Linear Address (初始EIP/PC)'
+        };
+
+        function analyzeHexFromText(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            
+            if (lines.length === 0) {
+                showToast("没有检测到有效内容！", "error");
+                return;
+            }
+
+            document.getElementById('resultsContainer').style.display = 'flex';
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            let extLinear = 0;
+            let extSegment = 0;
+            let minAddr = 0xFFFFFFFF;
+            let maxAddr = 0;
+            let dataAtMinAddr = null;
+            let startLinearAddr = null;
+            let totalDataBytes = 0;
+            let checksumErrorCount = 0;
+            let isEofFound = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                let tr = document.createElement('tr');
+                
+                // 行号
+                let tdNum = document.createElement('td');
+                tdNum.textContent = i + 1;
+                tr.appendChild(tdNum);
+
+                if (!line.startsWith(':')) {
+                    tr.innerHTML += `<td colspan="4" class="invalid">无效行 (缺少':') - ${line}</td>`;
+                    tbody.appendChild(tr);
+                    continue;
+                }
+
+                // 拆解结构
+                const mark = line.substring(0, 1);
+                const lenHex = line.substring(1, 3);
+                const addrHex = line.substring(3, 7);
+                const typeHex = line.substring(7, 9);
+                
+                const len = parseInt(lenHex, 16);
+                
+                // 校验长度是否合理 (1 + 2 + 4 + 2 + len*2 + 2 = 11 + len*2 字符)
+                const expectedLineLength = 11 + len * 2;
+                if (line.length !== expectedLineLength) {
+                    tr.innerHTML += `<td colspan="4" class="invalid">行长度不匹配 - 期望 ${expectedLineLength} 字符, 实际 ${line.length}</td>`;
+                    tbody.appendChild(tr);
+                    continue;
+                }
+
+                const dataHex = line.substring(9, 9 + len * 2);
+                const csumHex = line.substring(9 + len * 2, 11 + len * 2);
+
+                // 格式化展示片段
+                let tdCode = document.createElement('td');
+                tdCode.innerHTML = `
+                    <span class="c-mark" title="Record Mark">${mark}</span>
+                    <span class="c-len" title="Length (${len} bytes)">${lenHex}</span>
+                    <span class="c-addr" title="Offset">${addrHex}</span>
+                    <span class="c-type" title="Type">${typeHex}</span>
+                    <span class="c-data" title="Data/Payload">${dataHex}</span>
+                    <span class="c-csum" title="Checksum">${csumHex}</span>
+                `;
+                tr.appendChild(tdCode);
+
+                // 类型解释
+                let tdType = document.createElement('td');
+                tdType.textContent = RECORD_TYPES[typeHex] || `Unknown (${typeHex})`;
+                tr.appendChild(tdType);
+
+                // 校验和校验计算: 将从Length到Data的每一字节相加，然后取补码，应等于csumHex
+                let sum = parseInt(lenHex, 16) + (parseInt(addrHex.substring(0,2), 16) + parseInt(addrHex.substring(2,4), 16)) + parseInt(typeHex, 16);
+                for (let j = 0; j < dataHex.length; j += 2) {
+                    sum += parseInt(dataHex.substring(j, j+2), 16);
+                }
+                const calculatedCsum = (0x100 - (sum & 0xFF)) & 0xFF;
+                const isCsumValid = calculatedCsum === parseInt(csumHex, 16);
+                
+                if (!isCsumValid) checksumErrorCount++;
+
+                // 逻辑处理
+                let computedAddrStr = "-";
+                if (typeHex === '02') {
+                    extSegment = parseInt(dataHex, 16);
+                } else if (typeHex === '04') {
+                    extLinear = parseInt(dataHex, 16);
+                } else if (typeHex === '05') {
+                    startLinearAddr = parseInt(dataHex, 16);
+                } else if (typeHex === '01') {
+                    isEofFound = true;
+                } else if (typeHex === '00') {
+                    totalDataBytes += len;
+                    // 计算绝对地址 (改用乘法防止32位有符号数移位溢出负数，特别是在0x80000000以上的高位地址)
+                    const offset = parseInt(addrHex, 16);
+                    const absoluteAddr = (extLinear * 65536) + (extSegment * 16) + offset;
+                    computedAddrStr = "0x" + absoluteAddr.toString(16).toUpperCase().padStart(8, '0');
+                    
+                    // 将绝对地址和长度记录在 DOM 上供搜索使用
+                    tr.dataset.addr = absoluteAddr;
+                    tr.dataset.len = len;
+
+                    if (absoluteAddr < minAddr) {
+                        minAddr = absoluteAddr;
+                        dataAtMinAddr = dataHex;
+                    }
+                    if (absoluteAddr > maxAddr) {
+                        maxAddr = absoluteAddr;
+                    }
+                }
+
+                // 地址列
+                let tdAddr = document.createElement('td');
+                tdAddr.textContent = computedAddrStr;
+                tdAddr.className = "c-addr";
+                tr.appendChild(tdAddr);
+
+                // 检验结果列
+                let tdCsum = document.createElement('td');
+                if (isCsumValid) {
+                    tdCsum.innerHTML = `<span class="valid">✅ OK</span>`;
+                } else {
+                    tdCsum.innerHTML = `<span class="invalid">❌ Error (应为${calculatedCsum.toString(16).toUpperCase().padStart(2, '0')})</span>`;
+                }
+                tr.appendChild(tdCsum);
+
+                tbody.appendChild(tr);
+            }
+
+            // 更新摘要面板
+            document.getElementById('resStatus').innerHTML = checksumErrorCount === 0 
+                ? `<span class="valid">✅ 完美 (0个校验错误) ${isEofFound ? '[包含EOF]' : '[无EOF]'}</span>`
+                : `<span class="invalid">❌ 发现 ${checksumErrorCount} 个校验错误</span>`;
+
+            const hasData = minAddr !== 0xFFFFFFFF;
+            document.getElementById('resBaseAddr').textContent = hasData 
+                ? "0x" + minAddr.toString(16).toUpperCase().padStart(8, '0')
+                : "未找到数据";
+
+            document.getElementById('resEntryPoint').textContent = startLinearAddr !== null
+                ? "0x" + startLinearAddr.toString(16).toUpperCase().padStart(8, '0')
+                : "未提供 (无Type 05)";
+
+            // 栈指针推测 (小端模式取前4个字节)
+            if (hasData && dataAtMinAddr && dataAtMinAddr.length >= 8) {
+                const b0 = dataAtMinAddr.substring(0, 2);
+                const b1 = dataAtMinAddr.substring(2, 4);
+                const b2 = dataAtMinAddr.substring(4, 6);
+                const b3 = dataAtMinAddr.substring(6, 8);
+                document.getElementById('resStackPointer').textContent = `0x${b3}${b2}${b1}${b0}`;
+            } else {
+                document.getElementById('resStackPointer').textContent = "数据不足或未找到基址数据";
+            }
+
+            document.getElementById('resTotalSize').textContent = totalDataBytes.toLocaleString() + " 字节";
+        }
+
+        function searchAddress() {
+            let query = document.getElementById('addressSearch').value.trim();
+            if (!query) {
+                showToast("请输入需要搜索的地址！", "warning");
+                return;
+            }
+            if (query.toLowerCase().startsWith('0x')) {
+                query = query.substring(2);
+            }
+            
+            // 严格的格式验证：必须是纯粹的十六进制字符，防止如 "1000g" 被 parseInt 容错解析而导致误匹配
+            if (!/^[0-9a-fA-F]+$/.test(query)) {
+                showToast("请输入有效的十六进制地址！", "warning");
+                return;
+            }
+            
+            const searchAddr = parseInt(query, 16);
+            if (isNaN(searchAddr)) {
+                showToast("请输入有效的十六进制地址！", "warning");
+                return;
+            }
+
+            // 清除旧的搜索高亮
+            document.querySelectorAll('.highlight-row, .closest-highlight-row').forEach(tr => {
+                tr.classList.remove('highlight-row', 'closest-highlight-row');
+            });
+
+            const rows = document.querySelectorAll('#tableBody tr');
+            let exactMatchFound = false;
+            let closestRow = null;
+            let minDistance = Infinity;
+            let closestAddr = -1;
+
+            for (let tr of rows) {
+                if (tr.dataset.addr && tr.dataset.len) {
+                    const startAddr = parseInt(tr.dataset.addr, 10);
+                    const length = parseInt(tr.dataset.len, 10);
+                    
+                    if (searchAddr >= startAddr && searchAddr < startAddr + length) {
+                        // 找到该地址所在的数据行，精确匹配
+                        tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        tr.classList.add('highlight-row');
+                        setTimeout(() => tr.classList.remove('highlight-row'), 2500);
+                        exactMatchFound = true;
+                        
+                        // 优化精确匹配提示：区分是刚好对应行首地址，还是包含在这一行的内部偏移数据里
+                        const offsetInRow = searchAddr - startAddr;
+                        const hexFormatted = searchAddr.toString(16).toUpperCase();
+                        if (offsetInRow === 0) {
+                            showToast(`已成功定位到行首地址 [0x${hexFormatted}]！`, "success");
+                        } else {
+                            showToast(`已成功定位到地址 [0x${hexFormatted}]！该地址位于数据行 0x${startAddr.toString(16).toUpperCase().padStart(8, '0')} 内第 ${offsetInRow + 1} 字节`, "success");
+                        }
+                        break;
+                    } else {
+                        // 记录距离，以便模糊匹配
+                        const distStart = Math.abs(startAddr - searchAddr);
+                        const distEnd = Math.abs((startAddr + length - 1) - searchAddr);
+                        const dist = Math.min(distStart, distEnd);
+                        
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            closestRow = tr;
+                            closestAddr = startAddr;
+                        }
+                    }
+                }
+            }
+
+            if (!exactMatchFound) {
+                if (closestRow) {
+                    const hexFormatted = searchAddr.toString(16).toUpperCase();
+                    const nearestHex = closestAddr.toString(16).toUpperCase().padStart(8, '0');
+                    showToast(`未找到该精确地址 [0x${hexFormatted}]，已跳转到附近的最近数据区域: 0x${nearestHex}`, "warning");
+                    closestRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    closestRow.classList.add('closest-highlight-row'); // 使用淡黄色进行模糊匹配高亮，防止与精确匹配混淆
+                    setTimeout(() => closestRow.classList.remove('closest-highlight-row'), 2500);
+                } else {
+                    showToast("在解析的数据区域中未找到该地址对应的数据，且无有效数据供跳转。", "error");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
