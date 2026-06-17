@@ -185,12 +185,14 @@
         .stat-label { font-size: 12px; color: var(--mark-color); }
 
         /* Memory Map */
-        .memory-map-container { margin: 10px 0; }
-        .memory-map-title { font-size: 13px; color: var(--text-color); margin-bottom: 6px; font-weight: bold; }
+        .memory-map-container { margin: 20px 0; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--panel-bg); }
+        .memory-map-title { font-size: 14px; color: var(--text-color); font-weight: bold; }
         .memory-map-bar {
-            width: 100%; height: 20px; background-color: var(--border-color);
+            width: 100%; height: 24px; background-color: #E5E7EB;
             border-radius: 4px; display: flex; overflow: hidden; position: relative;
+            margin: 10px 0; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
+        :root[data-theme="dark"] .memory-map-bar { background-color: #333; }
         .memory-segment {
             height: 100%; background-color: var(--success-color);
             position: absolute; cursor: pointer; transition: opacity 0.2s, box-shadow 0.2s;
@@ -228,8 +230,20 @@
         th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-color); }
         th { background-color: var(--table-header-bg); color: var(--text-color); position: sticky; top: 0; font-size: 13px; z-index: 5; }
         tr:hover td { background-color: var(--table-row-hover); }
-        .highlight-row td { background-color: #ffffb8 !important; color: #000; transition: background-color 0.5s; }
-        :root[data-theme="dark"] .highlight-row td { background-color: #7a6e15 !important; color: #fff; }
+        @keyframes flashWarningAnim {
+            from { opacity: 1; }
+            to { opacity: 0.4; }
+        }
+        @keyframes highlightFlashLight {
+            0% { background-color: #ffffb8; color: #000; }
+            100% { background-color: transparent; }
+        }
+        @keyframes highlightFlashDark {
+            0% { background-color: #7a6e15; color: #fff; }
+            100% { background-color: transparent; }
+        }
+        .highlight-row td { animation: highlightFlashLight 1s ease-out forwards; }
+        :root[data-theme="dark"] .highlight-row td { animation: highlightFlashDark 1s ease-out forwards; }
         
         .table-container { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; min-height: 0; transition: border-color 0.3s; }
         
@@ -293,6 +307,10 @@
         <div class="controls">
             <button class="btn" onclick="document.getElementById('fileInput').click()">📁 导入 HEX</button>
             <input type="file" id="fileInput" accept=".hex,.txt,.bin" onchange="handleFileSelect(event)">
+            
+            <button class="btn btn-outline" onclick="document.getElementById('mapInput').click()">➕ 导入 .map (可选)</button>
+            <input type="file" id="mapInput" accept=".map,.txt" onchange="handleMapFileSelect(event)">
+            
             <button class="btn btn-outline" id="exportBtn" style="display:none;" onclick="exportBin()">📦 导出 BIN</button>
             <button class="btn btn-danger" onclick="resetApp()">🗑️ 清空重置</button>
             <div style="flex-grow: 1;"></div>
@@ -351,11 +369,54 @@
         </div>
 
         <div class="memory-map-container" id="memoryMapContainer" style="display: none;">
-            <div class="memory-map-title">内存空间热力图 (Memory Map)</div>
-            <div class="memory-map-bar" id="memoryMapBar"></div>
-            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--mark-color); margin-top: 4px;">
-                <span id="mapStartAddr">0x00000000</span>
-                <span id="mapEndAddr">0xFFFFFFFF</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div class="memory-map-title" style="margin-bottom: 0;">内存空间热力图 (Memory Map)</div>
+                <select id="mcuSelect" class="search-box" style="width: 200px; padding: 4px 8px; font-size: 13px;" onchange="buildMemoryMap()">
+                </select>
+            </div>
+            
+            <div id="flashWarning" style="display: none; color: var(--error-color); font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: flashWarningAnim 1s infinite alternate;">
+                ⚠️ 警告：当前固件大小或地址已超出目标芯片 Flash 物理边界！
+            </div>
+            
+            <div id="flashStatus" style="font-size: 13px; color: var(--text-color); margin-bottom: 5px; font-family: 'Consolas', monospace;">
+                Flash状态：-
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="mapStartAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x00000000</span>
+                <div class="memory-map-bar" id="memoryMapBar" style="flex-grow: 1;"></div>
+                <span id="mapEndAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0xFFFFFFFF</span>
+            </div>
+        </div>
+
+        <div class="memory-map-container" id="ramMapContainer" style="display: none; margin-top: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div class="memory-map-title" style="margin-bottom: 0;">RAM 空间分布 (基于 MAP 文件)</div>
+            </div>
+            
+            <div id="ramWarning" style="display: none; color: var(--error-color); font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: flashWarningAnim 0.5s infinite alternate;">
+                🚨 严重错误：内存分配已溢出目标芯片 RAM 物理边界！
+            </div>
+            <div id="mapMismatchWarning" style="display: none; color: #e6a23c; font-size: 13px; font-weight: bold; margin-bottom: 8px;">
+                ⚠️ 提示：加载的 HEX 文件与 MAP 文件总数据量偏差过大，可能不是同一次编译。
+            </div>
+            
+            <div id="ramStatus" style="font-size: 13px; color: var(--text-color); margin-bottom: 5px; font-family: 'Consolas', monospace;">
+                RAM状态：-
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ramStartAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x20000000</span>
+                <div class="memory-map-bar" id="ramMapBar" style="flex-grow: 1;"></div>
+                <span id="ramEndAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x20000000</span>
+            </div>
+            
+            <div style="display:flex; gap:15px; margin-top: 10px; font-size:12px; font-family:'Consolas', monospace; justify-content: center;">
+                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#409eff; border-radius:2px;"></div>RW Data</div>
+                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#e6a23c; border-radius:2px;"></div>ZI Data</div>
+                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#8e44ad; border-radius:2px;"></div>Heap</div>
+                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#f56c6c; border-radius:2px;"></div>Stack</div>
             </div>
         </div>
 
@@ -394,6 +455,8 @@
             minAddr: 0xFFFFFFFF,
             maxAddr: 0,
             maxEndAddr: 0,
+            hexTotalBytes: 0,
+            mapData: null,
             displayMode: 'hex',
             currentPage: 1,
             pageSize: 200,
@@ -409,6 +472,26 @@
             '04': 'Ext Lin Addr (高位地址)',
             '05': 'Start Lin Addr (PC)'
         };
+
+        const chipPresets = {
+            "CUSTOM": { name: "自定义范围 (自动适配)", start: null, end: null, size: null, ramStart: null, ramSize: null },
+            "CS32F405_1M": { name: "CS32F405 (1MB Flash / 192KB RAM)", start: 0x08000000, size: 1024 * 1024, ramStart: 0x20000000, ramSize: 192 * 1024 },
+            "STM32F103_64K": { name: "STM32F103 (64KB Flash / 20KB RAM)", start: 0x08000000, size: 64 * 1024, ramStart: 0x20000000, ramSize: 20 * 1024 },
+            "STM32F103_512K": { name: "STM32F103 (512KB Flash / 64KB RAM)", start: 0x08000000, size: 512 * 1024, ramStart: 0x20000000, ramSize: 64 * 1024 },
+            "STM32F407_1M": { name: "STM32F407 (1MB Flash / 192KB RAM)", start: 0x08000000, size: 1024 * 1024, ramStart: 0x20000000, ramSize: 192 * 1024 }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const select = document.getElementById('mcuSelect');
+            if (select) {
+                for (const key in chipPresets) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = chipPresets[key].name;
+                    select.appendChild(opt);
+                }
+            }
+        });
 
         const VECTOR_NAMES = [
             "Initial SP", "Reset_Handler", "NMI_Handler", "HardFault_Handler", 
@@ -586,6 +669,7 @@
             document.getElementById('resTotalSize').textContent = totalDataBytes.toLocaleString() + " Bytes";
             document.getElementById('resTotalRecords').textContent = validRecords.toLocaleString();
 
+            appState.hexTotalBytes = totalDataBytes;
             buildMemoryMap();
             buildVectorTable(baseBytesBuffer, baseBytesFilled);
             
@@ -674,8 +758,25 @@
             const container = document.getElementById('memoryMapContainer');
             if (appState.minAddr === 0xFFFFFFFF) { container.style.display = 'none'; return; }
             container.style.display = 'block';
-            document.getElementById('mapStartAddr').textContent = "0x" + appState.minAddr.toString(16).toUpperCase().padStart(8, '0');
-            document.getElementById('mapEndAddr').textContent = "0x" + appState.maxEndAddr.toString(16).toUpperCase().padStart(8, '0');
+            
+            const selectedChipKey = document.getElementById('mcuSelect').value;
+            const chip = chipPresets[selectedChipKey];
+            
+            let mapStart, mapEnd, totalSize;
+            let isCustom = selectedChipKey === 'CUSTOM';
+            
+            if (isCustom) {
+                mapStart = appState.minAddr;
+                mapEnd = appState.maxEndAddr;
+                totalSize = mapEnd - mapStart + 1;
+            } else {
+                mapStart = chip.start;
+                totalSize = chip.size;
+                mapEnd = mapStart + totalSize - 1;
+            }
+
+            document.getElementById('mapStartAddr').textContent = "0x" + mapStart.toString(16).toUpperCase().padStart(8, '0');
+            document.getElementById('mapEndAddr').textContent = "0x" + mapEnd.toString(16).toUpperCase().padStart(8, '0');
 
             let blocks = appState.records.filter(r => r.absoluteAddr !== null).map(r => ({ start: r.absoluteAddr, len: r.len }));
             blocks.sort((a, b) => a.start - b.start);
@@ -694,30 +795,240 @@
 
             const mapBar = document.getElementById('memoryMapBar');
             mapBar.innerHTML = '';
-            const totalRange = appState.maxEndAddr - appState.minAddr + 1;
             const tooltip = document.getElementById('customTooltip');
+            
+            let outOfBounds = false;
+            let totalUsed = 0;
 
             merged.forEach(seg => {
-                let leftPercent = ((seg.start - appState.minAddr) / totalRange) * 100;
-                let widthPercent = ((seg.end - seg.start + 1) / totalRange) * 100;
-                if (widthPercent > 0 && widthPercent < 0.2) widthPercent = 0.2; 
+                totalUsed += (seg.end - seg.start + 1);
+                
+                if (!isCustom) {
+                    if (seg.start < mapStart || seg.end > mapEnd) {
+                        outOfBounds = true;
+                    }
+                }
+                
+                // Only render if it overlaps with map window
+                let visibleStart = Math.max(seg.start, mapStart);
+                let visibleEnd = Math.min(seg.end, mapEnd);
+                
+                if (visibleStart <= visibleEnd) {
+                    let leftPercent = ((visibleStart - mapStart) / totalSize) * 100;
+                    let widthPercent = ((visibleEnd - visibleStart + 1) / totalSize) * 100;
+                    if (widthPercent > 0 && widthPercent < 0.2) widthPercent = 0.2; 
+                    if (leftPercent < 0) leftPercent = 0;
+                    if (leftPercent + widthPercent > 100) widthPercent = 100 - leftPercent;
 
-                const div = document.createElement('div');
-                div.className = 'memory-segment';
-                div.style.left = leftPercent + '%';
-                div.style.width = widthPercent + '%';
+                    const div = document.createElement('div');
+                    div.className = 'memory-segment';
+                    div.style.left = leftPercent + '%';
+                    div.style.width = widthPercent + '%';
 
-                const tipText = `起始: 0x${seg.start.toString(16).toUpperCase().padStart(8, '0')}\n结束: 0x${seg.end.toString(16).toUpperCase().padStart(8, '0')}\n大小: ${(seg.end - seg.start + 1).toLocaleString()} B`;
+                    const tipText = `起始: 0x${seg.start.toString(16).toUpperCase().padStart(8, '0')}\n结束: 0x${seg.end.toString(16).toUpperCase().padStart(8, '0')}\n大小: ${(seg.end - seg.start + 1).toLocaleString()} B`;
 
-                div.addEventListener('mousemove', (e) => {
-                    tooltip.style.opacity = '1';
-                    tooltip.textContent = tipText;
-                    tooltip.style.left = e.clientX + 'px';
-                    tooltip.style.top = (e.clientY - 15) + 'px';
-                });
-                div.addEventListener('mouseleave', () => tooltip.style.opacity = '0');
-                mapBar.appendChild(div);
+                    div.addEventListener('mousemove', (e) => {
+                        tooltip.style.opacity = '1';
+                        tooltip.textContent = tipText;
+                        tooltip.style.left = e.clientX + 'px';
+                        tooltip.style.top = (e.clientY - 15) + 'px';
+                    });
+                    div.addEventListener('mouseleave', () => tooltip.style.opacity = '0');
+                    mapBar.appendChild(div);
+                }
             });
+            
+            const warningEl = document.getElementById('flashWarning');
+            warningEl.style.display = outOfBounds ? 'block' : 'none';
+            
+            const statusEl = document.getElementById('flashStatus');
+            if (isCustom) {
+                statusEl.textContent = `Flash状态：总跨度 ${((appState.maxEndAddr - appState.minAddr + 1) / 1024).toFixed(2)} KB / 实际写入 ${(totalUsed / 1024).toFixed(2)} KB`;
+            } else {
+                let free = totalSize - totalUsed;
+                let pct = (totalUsed / totalSize) * 100;
+                statusEl.textContent = `Flash状态：已使用 ${(totalUsed / 1024).toFixed(2)} KB / 剩余 ${(free / 1024).toFixed(2)} KB (占用率: ${pct.toFixed(2)}%)`;
+            }
+            
+            buildRamMap(selectedChipKey, chip);
+        }
+
+        function handleMapFileSelect(event) {
+            if (event.target.files.length) {
+                const reader = new FileReader();
+                reader.onload = e => parseMapFile(e.target.result);
+                reader.readAsText(event.target.files[0]);
+            }
+        }
+
+        function parseMapFile(text) {
+            const mapData = {
+                roCode: 0, roData: 0, rwData: 0, ziData: 0, totalRom: 0, heapSize: 0, stackSize: 0, valid: false
+            };
+            
+            const romMatch = text.match(/Total\s+ROM\s+Size\s*\(.*?\)\s+(\d+)/);
+            if (romMatch) mapData.totalRom = parseInt(romMatch[1], 10);
+            
+            const extractSize = (regexList) => {
+                for (let r of regexList) {
+                    const m = text.match(r);
+                    if (m && m[1]) {
+                        return m[1].toLowerCase().startsWith('0x') ? parseInt(m[1], 16) : parseInt(m[1], 10);
+                    }
+                }
+                return 0;
+            };
+
+            mapData.heapSize = extractSize([
+                /Execution Region\s+.*HEAP.*\s*\(Base:\s*(?:0x)?[0-9a-fA-F]+,\s*Size:\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /\bHEAP\s+(?:0x[0-9a-fA-F]+)\s+Section\s+(\d+)/i,
+                /_Min_Heap_Size\s*=\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /(0x[0-9a-fA-F]+|\d+)\s+_Min_Heap_Size/i,
+                /\._user_heap_stack\s+(?:0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+|\d+)/i,
+                /heap_size\s*(?:=)?\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /size.*?heap\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /heap.*?size\s*(0x[0-9a-fA-F]+|\d+)/i
+            ]);
+
+            mapData.stackSize = extractSize([
+                /Execution Region\s+.*STACK.*\s*\(Base:\s*(?:0x)?[0-9a-fA-F]+,\s*Size:\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /\bSTACK\s+(?:0x[0-9a-fA-F]+)\s+Section\s+(\d+)/i,
+                /_Min_Stack_Size\s*=\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /(0x[0-9a-fA-F]+|\d+)\s+_Min_Stack_Size/i,
+                /stack_size\s*(?:=)?\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /size.*?stack\s*(0x[0-9a-fA-F]+|\d+)/i,
+                /stack.*?size\s*(0x[0-9a-fA-F]+|\d+)/i
+            ]);
+
+            // 如果 GCC 使用了复合的 _user_heap_stack 且堆栈未被独立定义
+            if (mapData.heapSize > 0 && mapData.stackSize === 0) {
+                const combinedMatch = text.match(/\._user_heap_stack\s+(?:0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+|\d+)/i);
+                if (combinedMatch) {
+                    const combinedSize = combinedMatch[1].toLowerCase().startsWith('0x') ? parseInt(combinedMatch[1], 16) : parseInt(combinedMatch[1], 10);
+                    mapData.stackSize = Math.floor(combinedSize / 2);
+                    mapData.heapSize = combinedSize - mapData.stackSize;
+                }
+            }
+            
+            const lines = text.split('\n');
+            lines.forEach(l => {
+                if (l.includes('Grand Totals')) {
+                    const parts = l.trim().split(/\s+/);
+                    if (parts.length >= 7) {
+                        mapData.rwData = parseInt(parts[3], 10);
+                        mapData.ziData = parseInt(parts[4], 10);
+                        mapData.valid = true;
+                    }
+                }
+            });
+            
+            // Backup parsing for RW/ZI if "Grand Totals" didn't match perfectly
+            if (!mapData.valid) {
+                const rwRegex = /Total\s+RW\s+Size\s*\(.*?\)\s+(\d+)/;
+                const rwMatch = text.match(rwRegex);
+                if (rwMatch) {
+                    mapData.rwData = parseInt(rwMatch[1], 10);
+                    mapData.ziData = 0;
+                    mapData.valid = true;
+                }
+            }
+
+            if (!mapData.valid) {
+                showToast("未检测到标准 MAP 文件格式数据，解析可能不完整", "warning");
+            } else {
+                showToast(`成功解析 MAP！Heap:${mapData.heapSize} B, Stack:${mapData.stackSize} B, RW:${mapData.rwData} B, ZI:${mapData.ziData} B`, "success");
+            }
+            
+            appState.mapData = mapData;
+            
+            if (document.getElementById('resultsContainer').style.display !== 'none') {
+                buildMemoryMap(); 
+            }
+            document.getElementById('mapInput').value = '';
+        }
+
+        function buildRamMap(chipKey, chip) {
+            const container = document.getElementById('ramMapContainer');
+            if (!appState.mapData || !appState.mapData.valid) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+            
+            const mapData = appState.mapData;
+            let isCustom = chipKey === 'CUSTOM';
+            
+            let ramStart = isCustom ? 0x20000000 : (chip.ramStart || 0x20000000);
+            let ramSize = isCustom ? (mapData.rwData + mapData.ziData + mapData.heapSize + mapData.stackSize) : (chip.ramSize || 1024);
+            if (isCustom && ramSize === 0) ramSize = 1024;
+            
+            document.getElementById('ramStartAddr').textContent = "0x" + ramStart.toString(16).toUpperCase().padStart(8, '0');
+            document.getElementById('ramEndAddr').textContent = "0x" + (ramStart + ramSize - 1).toString(16).toUpperCase().padStart(8, '0');
+            
+            const mismatchWarning = document.getElementById('mapMismatchWarning');
+            if (mapData.totalRom > 0 && Math.abs(appState.hexTotalBytes - mapData.totalRom) > 1024) {
+                mismatchWarning.style.display = 'block';
+            } else {
+                mismatchWarning.style.display = 'none';
+            }
+            
+            const mapBar = document.getElementById('ramMapBar');
+            mapBar.innerHTML = '';
+            const tooltip = document.getElementById('customTooltip');
+            
+            const segments = [
+                { name: 'RW Data (已初始化)', size: mapData.rwData, color: '#409eff' },
+                { name: 'ZI Data (未初始化)', size: mapData.ziData, color: '#e6a23c' },
+                { name: 'Heap (动态堆)', size: mapData.heapSize, color: '#8e44ad' },
+                { name: 'Stack (系统栈)', size: mapData.stackSize, color: '#f56c6c' }
+            ];
+            
+            let currentOffset = 0;
+            let totalRamUsed = 0;
+            
+            segments.forEach(seg => {
+                totalRamUsed += seg.size;
+                if (seg.size > 0) {
+                    let leftPct = (currentOffset / ramSize) * 100;
+                    let widthPct = (seg.size / ramSize) * 100;
+                    
+                    if (leftPct > 100) leftPct = 100;
+                    if (leftPct + widthPct > 100) widthPct = 100 - leftPct;
+                    if (widthPct > 0 && widthPct < 0.2) widthPct = 0.2;
+                    
+                    if (widthPct > 0) {
+                        const div = document.createElement('div');
+                        div.className = 'memory-segment';
+                        div.style.left = leftPct + '%';
+                        div.style.width = widthPct + '%';
+                        div.style.backgroundColor = seg.color;
+                        
+                        div.addEventListener('mousemove', (e) => {
+                            tooltip.style.opacity = '1';
+                            tooltip.textContent = `[${seg.name}]\n大小: ${seg.size.toLocaleString()} B (${(seg.size/1024).toFixed(2)} KB)`;
+                            tooltip.style.left = e.clientX + 'px';
+                            tooltip.style.top = (e.clientY - 15) + 'px';
+                        });
+                        div.addEventListener('mouseleave', () => tooltip.style.opacity = '0');
+                        mapBar.appendChild(div);
+                    }
+                    currentOffset += seg.size;
+                }
+            });
+            
+            const ramWarning = document.getElementById('ramWarning');
+            if (!isCustom && totalRamUsed > ramSize) {
+                ramWarning.style.display = 'block';
+            } else {
+                ramWarning.style.display = 'none';
+            }
+            
+            const statusEl = document.getElementById('ramStatus');
+            const staticVar = mapData.rwData + mapData.ziData;
+            const dynVar = mapData.heapSize + mapData.stackSize;
+            let freeRam = isCustom ? 0 : ramSize - totalRamUsed;
+            
+            statusEl.textContent = `静态全局变量 (RW+ZI): ${(staticVar/1024).toFixed(2)} KB | 系统堆栈分配 (Heap+Stack): ${(dynVar/1024).toFixed(2)} KB | 真实剩余可分配 RAM: ${(freeRam/1024).toFixed(2)} KB`;
         }
 
         // Vector Table Parse
@@ -798,9 +1109,13 @@
                 setTimeout(() => {
                     const row = document.getElementById(`row-${targetIndex}`);
                     if (row) {
+                        // 重置动画使其能够反复触发
+                        row.classList.remove('highlight-row');
+                        void row.offsetWidth; // Trigger reflow
+                        
                         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         row.classList.add('highlight-row');
-                        setTimeout(() => row.classList.remove('highlight-row'), 2000);
+                        setTimeout(() => row.classList.remove('highlight-row'), 1000);
                         
                         const addrHexStr = searchAddr.toString(16).toUpperCase();
                         if (exactRecIndex !== -1) {
