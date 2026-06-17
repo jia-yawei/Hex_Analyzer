@@ -245,6 +245,17 @@
         .highlight-row td { animation: highlightFlashLight 1s ease-out forwards; }
         :root[data-theme="dark"] .highlight-row td { animation: highlightFlashDark 1s ease-out forwards; }
         
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; align-items: center; }
+        .tab { 
+            padding: 10px 24px; font-size: 15px; font-weight: bold; color: var(--mark-color); 
+            cursor: pointer; transition: all 0.3s; position: relative; border-bottom: 3px solid transparent; 
+        }
+        .tab:hover { color: var(--primary-color); }
+        .tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .tab-content { display: none; flex-direction: column; overflow-y: auto; flex-grow: 1; }
+        .tab-content.active { display: flex; }
+
         .table-container { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; min-height: 0; transition: border-color 0.3s; }
         
         .c-mark { color: var(--mark-color); margin-right: 4px; }
@@ -322,8 +333,6 @@
                 <label for="modeAscii">ASCII</label>
             </div>
 
-            <input type="text" id="addressSearch" class="search-box" placeholder="输入 Hex 地址查找 (如 08000000)" onkeydown="if(event.key === 'Enter') searchAddress()">
-            <button class="btn" onclick="searchAddress()">搜索</button>
         </div>
     </div>
 
@@ -333,115 +342,130 @@
     </div>
 
     <div class="container" id="resultsContainer" style="display: none;">
-        <div class="summary-panel">
-            <div class="stat-box" id="statusBox">
-                <div class="stat-label">文件状态与校验和</div>
-                <div class="stat-value" id="resStatus">-</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">基地址 (Base Address)</div>
-                <div class="stat-value" id="resBaseAddr">-</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">结束地址 (End Address)</div>
-                <div class="stat-value" id="resEndAddr">-</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">入口地址 / PC (Type 05/03)</div>
-                <div class="stat-value" id="resEntryPoint">-</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">总数据量</div>
-                <div class="stat-value" id="resTotalSize">-</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">总记录数</div>
-                <div class="stat-value" id="resTotalRecords">-</div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('overview')" id="tabBtnOverview">📊 分析概览</div>
+            <div class="tab" onclick="switchTab('details')" id="tabBtnDetails">🔍 数据明细</div>
+            <div style="flex-grow: 1;"></div>
+            <div id="detailsSearchBox" style="display: none; align-items: center; gap: 10px;">
+                <input type="text" id="addressSearch" class="search-box" style="width: 200px; padding: 4px 8px; font-size: 13px;" placeholder="输入 Hex 地址查找 (如 08000000)" onkeydown="if(event.key === 'Enter') searchAddress()">
+                <button class="btn" style="padding: 4px 10px; font-size: 13px;" onclick="searchAddress()">搜索</button>
             </div>
         </div>
 
-        <div class="vector-table" id="vectorTableContainer" style="display: none;">
-            <div class="vector-header" onclick="toggleVectorTable()">
-                <span>⚡ 中断向量表解析 (ARM Cortex-M 推测)</span>
-                <span id="vectorChevron">▼</span>
+        <div id="tabOverview" class="tab-content active">
+            <div class="summary-panel">
+                <div class="stat-box" id="statusBox">
+                    <div class="stat-label">文件状态与校验和</div>
+                    <div class="stat-value" id="resStatus">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">基地址 (Base Address)</div>
+                    <div class="stat-value" id="resBaseAddr">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">结束地址 (End Address)</div>
+                    <div class="stat-value" id="resEndAddr">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">入口地址 / PC (Type 05/03)</div>
+                    <div class="stat-value" id="resEntryPoint">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">总数据量</div>
+                    <div class="stat-value" id="resTotalSize">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">总记录数</div>
+                    <div class="stat-value" id="resTotalRecords">-</div>
+                </div>
             </div>
-            <div class="vector-content" id="vectorContent"></div>
+
+            <div class="vector-table" id="vectorTableContainer" style="display: none;">
+                <div class="vector-header" onclick="toggleVectorTable()">
+                    <span>⚡ 中断向量表解析 (ARM Cortex-M 推测)</span>
+                    <span id="vectorChevron">▼</span>
+                </div>
+                <div class="vector-content" id="vectorContent"></div>
+            </div>
+
+            <div class="memory-map-container" id="memoryMapContainer" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="memory-map-title" style="margin-bottom: 0;">内存空间热力图 (Memory Map)</div>
+                    <select id="mcuSelect" class="search-box" style="width: 200px; padding: 4px 8px; font-size: 13px;" onchange="buildMemoryMap()">
+                    </select>
+                </div>
+                
+                <div id="flashWarning" style="display: none; color: var(--error-color); font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: flashWarningAnim 1s infinite alternate;">
+                    ⚠️ 警告：当前固件大小或地址已超出目标芯片 Flash 物理边界！
+                </div>
+                
+                <div id="flashStatus" style="font-size: 13px; color: var(--text-color); margin-bottom: 5px; font-family: 'Consolas', monospace;">
+                    Flash状态：-
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="mapStartAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x00000000</span>
+                    <div class="memory-map-bar" id="memoryMapBar" style="flex-grow: 1;"></div>
+                    <span id="mapEndAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0xFFFFFFFF</span>
+                </div>
+            </div>
+
+            <div class="memory-map-container" id="ramMapContainer" style="display: none; margin-top: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="memory-map-title" style="margin-bottom: 0;">RAM 空间分布 (基于 MAP 文件)</div>
+                </div>
+                
+                <div id="ramWarning" style="display: none; color: var(--error-color); font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: flashWarningAnim 0.5s infinite alternate;">
+                    🚨 严重错误：内存分配已溢出目标芯片 RAM 物理边界！
+                </div>
+                <div id="mapMismatchWarning" style="display: none; color: #e6a23c; font-size: 13px; font-weight: bold; margin-bottom: 8px;">
+                    ⚠️ 提示：加载的 HEX 文件与 MAP 文件总数据量偏差过大，可能不是同一次编译。
+                </div>
+                
+                <div id="ramStatus" style="font-size: 13px; color: var(--text-color); margin-bottom: 5px; font-family: 'Consolas', monospace;">
+                    RAM状态：-
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="ramStartAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x20000000</span>
+                    <div class="memory-map-bar" id="ramMapBar" style="flex-grow: 1;"></div>
+                    <span id="ramEndAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x20000000</span>
+                </div>
+                
+                <div style="display:flex; gap:15px; margin-top: 10px; font-size:12px; font-family:'Consolas', monospace; justify-content: center;">
+                    <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#409eff; border-radius:2px;"></div>RW Data</div>
+                    <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#e6a23c; border-radius:2px;"></div>ZI Data</div>
+                    <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#8e44ad; border-radius:2px;"></div>Heap</div>
+                    <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#f56c6c; border-radius:2px;"></div>Stack</div>
+                </div>
+            </div>
         </div>
 
-        <div class="memory-map-container" id="memoryMapContainer" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div class="memory-map-title" style="margin-bottom: 0;">内存空间热力图 (Memory Map)</div>
-                <select id="mcuSelect" class="search-box" style="width: 200px; padding: 4px 8px; font-size: 13px;" onchange="buildMemoryMap()">
-                </select>
-            </div>
-            
-            <div id="flashWarning" style="display: none; color: var(--error-color); font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: flashWarningAnim 1s infinite alternate;">
-                ⚠️ 警告：当前固件大小或地址已超出目标芯片 Flash 物理边界！
-            </div>
-            
-            <div id="flashStatus" style="font-size: 13px; color: var(--text-color); margin-bottom: 5px; font-family: 'Consolas', monospace;">
-                Flash状态：-
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span id="mapStartAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x00000000</span>
-                <div class="memory-map-bar" id="memoryMapBar" style="flex-grow: 1;"></div>
-                <span id="mapEndAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0xFFFFFFFF</span>
-            </div>
-        </div>
-
-        <div class="memory-map-container" id="ramMapContainer" style="display: none; margin-top: 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div class="memory-map-title" style="margin-bottom: 0;">RAM 空间分布 (基于 MAP 文件)</div>
-            </div>
-            
-            <div id="ramWarning" style="display: none; color: var(--error-color); font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: flashWarningAnim 0.5s infinite alternate;">
-                🚨 严重错误：内存分配已溢出目标芯片 RAM 物理边界！
-            </div>
-            <div id="mapMismatchWarning" style="display: none; color: #e6a23c; font-size: 13px; font-weight: bold; margin-bottom: 8px;">
-                ⚠️ 提示：加载的 HEX 文件与 MAP 文件总数据量偏差过大，可能不是同一次编译。
-            </div>
-            
-            <div id="ramStatus" style="font-size: 13px; color: var(--text-color); margin-bottom: 5px; font-family: 'Consolas', monospace;">
-                RAM状态：-
+        <div id="tabDetails" class="tab-content" style="overflow: hidden;">
+            <div class="table-container" id="tableContainer">
+                <table id="detailsTable">
+                    <thead>
+                        <tr>
+                            <th width="60">行号</th>
+                            <th>HEX 源指令分段</th>
+                            <th width="160">记录类型</th>
+                            <th width="120">物理地址</th>
+                            <th width="120">校验</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span id="ramStartAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x20000000</span>
-                <div class="memory-map-bar" id="ramMapBar" style="flex-grow: 1;"></div>
-                <span id="ramEndAddr" style="font-size: 12px; color: var(--mark-color); font-family: 'Consolas', monospace; white-space: nowrap;">0x20000000</span>
-            </div>
-            
-            <div style="display:flex; gap:15px; margin-top: 10px; font-size:12px; font-family:'Consolas', monospace; justify-content: center;">
-                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#409eff; border-radius:2px;"></div>RW Data</div>
-                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#e6a23c; border-radius:2px;"></div>ZI Data</div>
-                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#8e44ad; border-radius:2px;"></div>Heap</div>
-                <div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#f56c6c; border-radius:2px;"></div>Stack</div>
-            </div>
-        </div>
-
-        <div class="table-container" id="tableContainer">
-            <table id="detailsTable">
-                <thead>
-                    <tr>
-                        <th width="60">行号</th>
-                        <th>HEX 源指令分段</th>
-                        <th width="160">记录类型</th>
-                        <th width="120">物理地址</th>
-                        <th width="120">校验</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-
-        <div class="pagination" id="paginationCtrl">
-            <div id="pageInfo">第 1 页 / 共 1 页 (每页 200 条)</div>
-            <div class="page-controls">
-                <button class="page-btn" id="btnPrev" onclick="changePage(-1)">上一页</button>
-                <input type="number" id="pageJump" style="width: 50px; text-align: center; border: 1px solid var(--border-color); border-radius: 4px; background: var(--panel-bg); color: var(--text-color);" value="1" min="1" onkeydown="if(event.key==='Enter') jumpPage()">
-                <button class="page-btn" onclick="jumpPage()">跳转</button>
-                <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页</button>
+            <div class="pagination" id="paginationCtrl">
+                <div id="pageInfo">第 1 页 / 共 1 页 (每页 200 条)</div>
+                <div class="page-controls">
+                    <button class="page-btn" id="btnPrev" onclick="changePage(-1)">上一页</button>
+                    <input type="number" id="pageJump" style="width: 50px; text-align: center; border: 1px solid var(--border-color); border-radius: 4px; background: var(--panel-bg); color: var(--text-color);" value="1" min="1" onkeydown="if(event.key==='Enter') jumpPage()">
+                    <button class="page-btn" onclick="jumpPage()">跳转</button>
+                    <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1099,6 +1123,8 @@
 
             let targetIndex = exactRecIndex !== -1 ? exactRecIndex : closestRecIndex;
             if (targetIndex !== -1) {
+                switchTab('details');
+                
                 const targetPage = Math.floor(targetIndex / appState.pageSize) + 1;
                 if (appState.currentPage !== targetPage) {
                     appState.currentPage = targetPage;
@@ -1127,6 +1153,24 @@
                 }, 50); // slight delay to allow render
             } else {
                 showToast("未找到任何有效数据记录", "error");
+            }
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            document.getElementById('tabOverview').classList.remove('active');
+            document.getElementById('tabDetails').classList.remove('active');
+            document.getElementById('tabBtnOverview').classList.remove('active');
+            document.getElementById('tabBtnDetails').classList.remove('active');
+            document.getElementById('detailsSearchBox').style.display = 'none';
+            
+            if (tabId === 'overview') {
+                document.getElementById('tabOverview').classList.add('active');
+                document.getElementById('tabBtnOverview').classList.add('active');
+            } else if (tabId === 'details') {
+                document.getElementById('tabDetails').classList.add('active');
+                document.getElementById('tabBtnDetails').classList.add('active');
+                document.getElementById('detailsSearchBox').style.display = 'flex';
             }
         }
 
