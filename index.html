@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +20,28 @@
             --csum-color: #8e44ad;
             --error-color: #f56c6c;
             --success-color: #67c23a;
+            --table-header-bg: #f2f6fc;
+            --table-row-hover: #f5f7fa;
+            --drop-border: #c0c4cc;
+            --box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+            --stat-bg: #fafafa;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --panel-bg: #1e1e1e;
+            --border-color: #333333;
+            --primary-color: #3a8ee6;
+            --hover-color: #4a9ff7;
+            --table-header-bg: #2d2d2d;
+            --table-row-hover: #2a2a2a;
+            --drop-border: #444444;
+            --box-shadow: 0 4px 16px 0 rgba(0,0,0,0.3);
+            --stat-bg: #252525;
+            --success-color: #4caf50;
+            --error-color: #ef5350;
+            --mark-color: #7a7a7a;
         }
 
         body {
@@ -34,16 +56,34 @@
             box-sizing: border-box;
             overflow: hidden;
             gap: 10px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        h1 {
-            margin-top: 5px;
-            margin-bottom: 0;
-            color: #303133;
-            font-size: 22px;
-            text-align: center;
-            flex-shrink: 0;
+        h1 { margin: 5px 0 0 0; font-size: 22px; text-align: center; flex-shrink: 0; }
+        
+        .header-actions {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
         }
+
+        .icon-btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover { box-shadow: var(--box-shadow); border-color: var(--primary-color); }
 
         .container {
             display: flex;
@@ -52,55 +92,78 @@
             background-color: var(--panel-bg);
             padding: 12px 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
-        #resultsContainer {
-            flex-grow: 1;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
+        .controls { display: flex; gap: 10px; align-items: center; }
+        input[type="file"] { display: none; }
 
         .btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             transition: background-color 0.2s;
             white-space: nowrap;
         }
-
-        .btn:hover {
-            background-color: var(--hover-color);
+        .btn:hover { background-color: var(--hover-color); }
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
         }
+        .btn-outline:hover { background-color: var(--table-row-hover); border-color: var(--primary-color); }
+        .btn-danger {
+            background-color: transparent;
+            color: var(--error-color);
+            border: 1px solid var(--border-color);
+        }
+        .btn-danger:hover { background-color: #fef0f0; border-color: var(--error-color); }
+        :root[data-theme="dark"] .btn-danger:hover { background-color: rgba(239, 83, 80, 0.1); }
 
         .search-box {
             padding: 8px 12px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            font-size: 15px;
+            font-size: 14px;
             width: 250px;
             outline: none;
+            background: var(--panel-bg);
+            color: var(--text-color);
+            transition: all 0.2s;
         }
-        
-        .search-box:focus {
-            border-color: var(--primary-color);
-        }
+        .search-box:focus { border-color: var(--primary-color); }
+        .search-box.error { border-color: var(--error-color); background-color: rgba(245, 108, 108, 0.1); }
 
+        /* Drop Zone */
+        .drop-zone {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--drop-border);
+            border-radius: 12px;
+            background-color: var(--panel-bg);
+            margin: 20px 0;
+            transition: all 0.3s;
+            color: var(--mark-color);
+        }
+        .drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(64, 158, 255, 0.05);
+            color: var(--primary-color);
+        }
+        .drop-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.7; }
+
+        /* Results Area */
+        #resultsContainer { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
+        
         .summary-panel {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -109,294 +172,292 @@
         }
 
         .stat-box {
-            background-color: #fafafa;
+            background-color: var(--stat-bg);
             border: 1px solid var(--border-color);
             padding: 8px 12px;
             border-radius: 6px;
-            position: relative;
-            cursor: help;
             transition: all 0.3s ease;
         }
+        .stat-box.status-perfect { border-color: var(--success-color); background-color: rgba(103, 194, 58, 0.05); }
+        .stat-box.status-error { border-color: var(--error-color); background-color: rgba(245, 108, 108, 0.05); }
 
-        .stat-box:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-color: var(--primary-color);
+        .stat-value { font-size: 15px; font-weight: bold; color: var(--text-color); margin-top: 4px; font-family: 'Consolas', monospace; }
+        .stat-label { font-size: 12px; color: var(--mark-color); }
+
+        /* Memory Map */
+        .memory-map-container { margin: 10px 0; }
+        .memory-map-title { font-size: 13px; color: var(--text-color); margin-bottom: 6px; font-weight: bold; }
+        .memory-map-bar {
+            width: 100%; height: 20px; background-color: var(--border-color);
+            border-radius: 4px; display: flex; overflow: hidden; position: relative;
+        }
+        .memory-segment {
+            height: 100%; background-color: var(--success-color);
+            position: absolute; cursor: pointer; transition: opacity 0.2s, box-shadow 0.2s;
+        }
+        .memory-segment:hover { opacity: 0.8; box-shadow: 0 0 8px rgba(0,0,0,0.5); z-index: 10; }
+
+        /* Custom Tooltip */
+        #customTooltip {
+            position: fixed; background: rgba(0,0,0,0.8); color: #fff;
+            padding: 8px 12px; border-radius: 6px; font-size: 12px;
+            pointer-events: none; z-index: 9999; opacity: 0;
+            transition: opacity 0.15s; font-family: 'Consolas', monospace; white-space: pre;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translate(-50%, -100%); margin-top: -10px;
         }
 
-        .stat-box::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            background-color: rgba(30, 30, 30, 0.9);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            white-space: normal;
-            width: max-content;
-            max-width: 250px;
-            text-align: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 100;
-            pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-weight: normal;
-            line-height: 1.4;
+        /* Vector Table Collapsible */
+        .vector-table {
+            background-color: var(--stat-bg); border: 1px solid var(--border-color);
+            border-radius: 6px; margin: 10px 0; overflow: hidden;
+            transition: all 0.3s;
         }
-
-        .stat-box::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            border-width: 6px;
-            border-style: solid;
-            border-color: rgba(30, 30, 30, 0.9) transparent transparent transparent;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 100;
-            pointer-events: none;
+        .vector-header {
+            padding: 8px 12px; font-size: 13px; font-weight: bold; cursor: pointer;
+            display: flex; justify-content: space-between; user-select: none;
+            color: var(--text-color);
         }
+        .vector-header:hover { background-color: var(--table-row-hover); }
+        .vector-content { padding: 10px; border-top: 1px solid var(--border-color); display: none; font-size: 13px; font-family: 'Consolas', monospace; color: var(--text-color); }
+        .vector-content.open { display: block; }
+        .vector-item { display: inline-block; width: 250px; margin-bottom: 4px; }
 
-        .stat-box:hover::after,
-        .stat-box:hover::before {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(-8px);
-        }
-
-        .stat-value {
-            font-size: 16px;
-            font-weight: bold;
-            color: #303133;
-            margin-top: 2px;
-            font-family: 'Consolas', monospace;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #909399;
-        }
-
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 8px 10px;
-            background-color: #fafafa;
-            border-radius: 4px;
-            font-family: 'Consolas', monospace;
-            font-size: 14px;
-            border: 1px solid var(--border-color);
-        }
-
-        .legend-item { display: flex; align-items: center; gap: 4px; }
-        .color-box { width: 12px; height: 12px; border-radius: 2px; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 16px; /* Slightly reduced to show more rows */
-            margin-top: 5px;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 6px 10px;
-            border-bottom: 1px solid #ebeef5;
-        }
-
-        th {
-            background-color: #f2f6fc;
-            color: #606266;
-            position: sticky;
-            top: 0;
-            font-size: 14px;
-        }
-
-        tr:hover {
-            background-color: #f5f7fa;
-        }
-
-        .highlight-row {
-            background-color: #e6f7ff !important;
-            transition: background-color 0.5s;
-        }
-
-        .table-container {
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            min-height: 0; /* needed for flex scrolling */
-        }
-
-        /* Syntax coloring */
-        .c-mark { color: var(--mark-color); margin-right: 6px; }
-        .c-len { color: var(--len-color); font-weight: bold; margin-right: 6px; }
-        .c-addr { color: var(--addr-color); font-weight: bold; margin-right: 6px; }
-        .c-type { color: var(--type-color); font-weight: bold; margin-right: 6px; }
-        .c-data { color: var(--data-color); word-break: break-all; margin-right: 6px; }
-        .c-csum { color: var(--csum-color); font-weight: bold; }
+        /* Table */
+        table { width: 100%; border-collapse: collapse; font-family: 'Consolas', monospace; font-size: 15px; }
+        th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--table-header-bg); color: var(--text-color); position: sticky; top: 0; font-size: 13px; z-index: 5; }
+        tr:hover td { background-color: var(--table-row-hover); }
+        .highlight-row td { background-color: #ffffb8 !important; color: #000; transition: background-color 0.5s; }
+        :root[data-theme="dark"] .highlight-row td { background-color: #7a6e15 !important; color: #fff; }
         
+        .table-container { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; min-height: 0; transition: border-color 0.3s; }
+        
+        .c-mark { color: var(--mark-color); margin-right: 4px; }
+        .c-len { color: var(--len-color); font-weight: bold; margin-right: 4px; }
+        .c-addr { color: var(--addr-color); font-weight: bold; margin-right: 4px; }
+        .c-type { color: var(--type-color); font-weight: bold; margin-right: 4px; }
+        .c-data { color: var(--data-color); word-break: break-all; margin-right: 4px; }
+        .c-csum { color: var(--csum-color); font-weight: bold; }
         .valid { color: var(--success-color); }
         .invalid { color: var(--error-color); font-weight: bold; }
-        
-        /* Toast styles */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-            width: auto;
-            max-width: 90%;
-        }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; font-size: 13px; color: var(--text-color); }
+        .page-controls { display: flex; gap: 5px; align-items: center; }
+        .page-btn { padding: 4px 10px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;}
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-btn:not(:disabled):hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast-message {
-            background-color: #ffffff;
-            border: 1px solid #ebeef5;
-            padding: 12px 20px;
+            background-color: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 10px 20px; border-radius: 4px; box-shadow: var(--box-shadow);
+            display: flex; align-items: center; gap: 10px; font-size: 14px;
+            opacity: 0; transform: translateY(-20px); transition: all 0.3s;
+        }
+        .toast-message.show { opacity: 1; transform: translateY(0); }
+        
+        .radio-group {
+            display: inline-flex;
+            background: var(--table-header-bg);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            box-shadow: 0 4px 12px 0 rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 320px;
-            font-size: 14px;
-            pointer-events: auto;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            box-sizing: border-box;
+            overflow: hidden;
+            margin-right: 15px;
         }
-        .toast-message.show {
-            opacity: 1;
-            transform: translateY(0);
+        .radio-group label {
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-color);
         }
-        .toast-message.toast-error {
-            border-color: #fde2e2;
-            background-color: #fef0f0;
-            color: #f56c6c;
-        }
-        .toast-message.toast-success {
-            border-color: #e1f3d8;
-            background-color: #f0f9eb;
-            color: #67c23a;
-        }
-        .toast-message.toast-warning {
-            border-color: #faecd8;
-            background-color: #fdf6ec;
-            color: #e6a23c;
-        }
-        .toast-message.toast-info {
-            border-color: #e8f4ff;
-            background-color: #ecf5ff;
-            color: #409eff;
-        }
-        .closest-highlight-row {
-            background-color: #fff7e6 !important; /* 淡黄色高亮，用于未精确匹配的跳转 */
-            transition: background-color 0.5s;
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + label {
+            background: var(--primary-color);
+            color: white;
         }
     </style>
 </head>
 <body>
 
-    <h1>HEX 文件综合分析工具</h1>
+    <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" title="切换暗黑模式">🌙</button>
+    </div>
+
+    <h1>HEX 文件分析工具</h1>
 
     <div class="container" style="flex-shrink: 0; padding: 10px 15px;">
         <div class="controls">
-            <button class="btn" onclick="document.getElementById('fileInput').click()">导入 HEX 文件</button>
-            <input type="file" id="fileInput" accept=".hex,.txt" onchange="handleFileSelect(event)">
-            <button class="btn" style="background-color: #909399;" onclick="clearAll()">清空重置</button>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">📁 导入 HEX</button>
+            <input type="file" id="fileInput" accept=".hex,.txt,.bin" onchange="handleFileSelect(event)">
+            <button class="btn btn-outline" id="exportBtn" style="display:none;" onclick="exportBin()">📦 导出 BIN</button>
+            <button class="btn btn-danger" onclick="resetApp()">🗑️ 清空重置</button>
             <div style="flex-grow: 1;"></div>
-            <input type="text" id="addressSearch" class="search-box" placeholder="输入地址 (如 08000000) 查找数据" onkeydown="if(event.key === 'Enter') searchAddress()">
-            <button class="btn" onclick="searchAddress()">搜索地址</button>
+            
+            <div class="radio-group" id="dataModeToggle" style="display:none;">
+                <input type="radio" id="modeHex" name="dmode" value="hex" checked onchange="toggleDataMode('hex')">
+                <label for="modeHex">Hex</label>
+                <input type="radio" id="modeAscii" name="dmode" value="ascii" onchange="toggleDataMode('ascii')">
+                <label for="modeAscii">ASCII</label>
+            </div>
+
+            <input type="text" id="addressSearch" class="search-box" placeholder="输入 Hex 地址查找 (如 08000000)" onkeydown="if(event.key === 'Enter') searchAddress()">
+            <button class="btn" onclick="searchAddress()">搜索</button>
         </div>
     </div>
 
+    <div id="dropZone" class="drop-zone">
+        <div class="drop-icon">📄</div>
+        <div style="font-size: 16px;">将 HEX 文件拖入此处，或点击上方按钮导入</div>
+    </div>
+
     <div class="container" id="resultsContainer" style="display: none;">
-        <h3 style="margin: 0;">🛠️ hex分析概览</h3>
         <div class="summary-panel">
-            <div class="stat-box" data-tooltip="指示文件结构是否完整，以及每条记录的校验和是否正确计算无误。">
+            <div class="stat-box" id="statusBox">
                 <div class="stat-label">文件状态与校验和</div>
                 <div class="stat-value" id="resStatus">-</div>
             </div>
-            <div class="stat-box" data-tooltip="Hex 文件中第一条有效数据所在的物理起始地址。">
+            <div class="stat-box">
                 <div class="stat-label">基地址 (Base Address)</div>
                 <div class="stat-value" id="resBaseAddr">-</div>
             </div>
-            <div class="stat-box" data-tooltip="Hex 文件中最后一条有效数据所在的物理结束地址（起始地址 + 数据长度 - 1）。">
+            <div class="stat-box">
                 <div class="stat-label">结束地址 (End Address)</div>
                 <div class="stat-value" id="resEndAddr">-</div>
             </div>
-            <div class="stat-box" data-tooltip="程序的执行入口地址。对于Type 05表示ARM等架构的初始PC指针，对于Type 03表示x86架构的初始CS:IP。">
+            <div class="stat-box">
                 <div class="stat-label">入口地址 / PC (Type 05/03)</div>
                 <div class="stat-value" id="resEntryPoint">-</div>
             </div>
-            <div class="stat-box" data-tooltip="基于ARM Cortex-M架构规范，从基地址的前4个字节推测出的初始栈指针(SP)数值。">
-                <div class="stat-label">初始栈指针 (SP) 推测 *</div>
-                <div class="stat-value" id="resStackPointer">-</div>
-                <div style="font-size:10px;color:#888;margin-top:4px;">* 假设为ARM Cortex-M小端架构，读取基址前4字节</div>
-            </div>
-            <div class="stat-box" data-tooltip="所有有效数据记录（Type 00）中包含的实际数据字节总数。">
-                <div class="stat-label">总数据量 (Bytes)</div>
+            <div class="stat-box">
+                <div class="stat-label">总数据量</div>
                 <div class="stat-value" id="resTotalSize">-</div>
             </div>
-            <div class="stat-box" data-tooltip="Hex文件中成功解析出的有效记录总条数。">
-                <div class="stat-label">总记录数 (Records)</div>
+            <div class="stat-box">
+                <div class="stat-label">总记录数</div>
                 <div class="stat-value" id="resTotalRecords">-</div>
             </div>
         </div>
 
-        <h3>📝 字段解析明细</h3>
-        <div class="legend">
-            <div class="legend-item"><div class="color-box" style="background-color: var(--mark-color)"></div> 记录起始标志 (:)</div>
-            <div class="legend-item"><div class="color-box" style="background-color: var(--len-color)"></div> 数据长度 (Length)</div>
-            <div class="legend-item"><div class="color-box" style="background-color: var(--addr-color)"></div> 偏移地址 (Offset)</div>
-            <div class="legend-item"><div class="color-box" style="background-color: var(--type-color)"></div> 记录类型 (Type)</div>
-            <div class="legend-item"><div class="color-box" style="background-color: var(--data-color)"></div> 数据域 (Data)</div>
-            <div class="legend-item"><div class="color-box" style="background-color: var(--csum-color)"></div> 校验和 (Checksum)</div>
+        <div class="vector-table" id="vectorTableContainer" style="display: none;">
+            <div class="vector-header" onclick="toggleVectorTable()">
+                <span>⚡ 中断向量表解析 (ARM Cortex-M 推测)</span>
+                <span id="vectorChevron">▼</span>
+            </div>
+            <div class="vector-content" id="vectorContent"></div>
         </div>
 
-        <div class="table-container">
+        <div class="memory-map-container" id="memoryMapContainer" style="display: none;">
+            <div class="memory-map-title">内存空间热力图 (Memory Map)</div>
+            <div class="memory-map-bar" id="memoryMapBar"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--mark-color); margin-top: 4px;">
+                <span id="mapStartAddr">0x00000000</span>
+                <span id="mapEndAddr">0xFFFFFFFF</span>
+            </div>
+        </div>
+
+        <div class="table-container" id="tableContainer">
             <table id="detailsTable">
                 <thead>
                     <tr>
-                        <th width="50">行号</th>
-                        <th>HEX 源指令分段展示</th>
-                        <th width="150">记录类型说明</th>
-                        <th width="120">解析出地址</th>
-                        <th width="80">校验状态</th>
+                        <th width="60">行号</th>
+                        <th>HEX 源指令分段</th>
+                        <th width="160">记录类型</th>
+                        <th width="120">物理地址</th>
+                        <th width="120">校验</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
-                </tbody>
+                <tbody id="tableBody"></tbody>
             </table>
+        </div>
+
+        <div class="pagination" id="paginationCtrl">
+            <div id="pageInfo">第 1 页 / 共 1 页 (每页 200 条)</div>
+            <div class="page-controls">
+                <button class="page-btn" id="btnPrev" onclick="changePage(-1)">上一页</button>
+                <input type="number" id="pageJump" style="width: 50px; text-align: center; border: 1px solid var(--border-color); border-radius: 4px; background: var(--panel-bg); color: var(--text-color);" value="1" min="1" onkeydown="if(event.key==='Enter') jumpPage()">
+                <button class="page-btn" onclick="jumpPage()">跳转</button>
+                <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页</button>
+            </div>
         </div>
     </div>
 
-    <script>
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    <div id="customTooltip"></div>
 
+    <script>
+        const appState = {
+            records: [],
+            dataBlocks: [], // merged memory blocks
+            minAddr: 0xFFFFFFFF,
+            maxAddr: 0,
+            maxEndAddr: 0,
+            displayMode: 'hex',
+            currentPage: 1,
+            pageSize: 200,
+            totalPages: 1,
+            theme: 'light'
+        };
+
+        const RECORD_TYPES = {
+            '00': 'Data (数据)',
+            '01': 'EOF (文件结束)',
+            '02': 'Ext Seg Addr (段地址)',
+            '03': 'Start Seg Addr',
+            '04': 'Ext Lin Addr (高位地址)',
+            '05': 'Start Lin Addr (PC)'
+        };
+
+        const VECTOR_NAMES = [
+            "Initial SP", "Reset_Handler", "NMI_Handler", "HardFault_Handler", 
+            "MemManage_Handler", "BusFault_Handler", "UsageFault_Handler", 
+            "Reserved", "Reserved", "Reserved", "Reserved", 
+            "SVCall_Handler", "DebugMonitor", "Reserved", "PendSV_Handler", "SysTick_Handler"
+        ];
+
+        // Theme Setup
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            appState.theme = appState.theme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', appState.theme);
+            document.getElementById('themeToggle').textContent = appState.theme === 'light' ? '🌙' : '☀️';
+        });
+
+        // Search Box Reset
+        document.getElementById('addressSearch').addEventListener('input', function() {
+            this.classList.remove('error');
+        });
+
+        // Dropzone Logic
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFileSelect(event) {
+            if (event.target.files.length) processFile(event.target.files[0]);
+        }
+
+        function processFile(file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                analyzeHexFromText(e.target.result);
-            };
+            reader.onload = e => analyzeHex(e.target.result);
             reader.readAsText(file);
+        }
+
+        function resetApp() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('addressSearch').value = '';
+            document.getElementById('addressSearch').classList.remove('error');
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'flex';
+            document.getElementById('exportBtn').style.display = 'none';
+            document.getElementById('dataModeToggle').style.display = 'none';
+            appState.records = [];
+            appState.dataBlocks = [];
         }
 
         function showToast(message, type = 'info') {
@@ -407,302 +468,385 @@
                 document.body.appendChild(container);
             }
             const toast = document.createElement('div');
-            toast.className = `toast-message toast-${type}`;
-            
-            let icon = 'ℹ️';
-            if (type === 'success') icon = '✅';
-            if (type === 'warning') icon = '⚠️';
-            if (type === 'error') icon = '❌';
-            
-            toast.innerHTML = `<span style="font-size: 16px; flex-shrink: 0;">${icon}</span> <span>${message}</span>`;
+            let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            toast.className = 'toast-message';
+            toast.style.borderLeft = `4px solid var(--${type}-color, var(--primary-color))`;
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
             container.appendChild(toast);
-            
-            // Trigger reflow to apply transition
-            toast.offsetHeight;
-            
-            // Add show class to fade in and slide down
+            toast.offsetHeight; // reflow
             toast.classList.add('show');
-            
             setTimeout(() => {
                 toast.classList.remove('show');
-                setTimeout(() => {
-                    toast.remove();
-                    if (container.children.length === 0) {
-                        container.remove();
-                    }
-                }, 300);
-            }, 3500);
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        function clearAll() {
-            document.getElementById('resultsContainer').style.display = 'none';
-            document.getElementById('fileInput').value = '';
-            document.getElementById('addressSearch').value = '';
-            const tbody = document.getElementById('tableBody');
-            if (tbody) tbody.innerHTML = ''; // 清空解析表格行，防止残留数据被旧搜索匹配且无提示的Bug
-        }
-
-        const RECORD_TYPES = {
-            '00': 'Data (数据记录)',
-            '01': 'End Of File (文件结束)',
-            '02': 'Extended Segment Address (段地址)',
-            '03': 'Start Segment Address (初始CS:IP)',
-            '04': 'Extended Linear Address (线性宽地址)',
-            '05': 'Start Linear Address (初始EIP/PC)'
-        };
-
-        function analyzeHexFromText(text) {
+        function analyzeHex(text) {
             const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-            
-            if (lines.length === 0) {
-                showToast("没有检测到有效内容！", "error");
-                return;
-            }
+            if (!lines.length) { showToast("文件为空或格式错误", "error"); return; }
 
+            document.getElementById('dropZone').style.display = 'none';
             document.getElementById('resultsContainer').style.display = 'flex';
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
+            document.getElementById('exportBtn').style.display = 'inline-block';
+            document.getElementById('dataModeToggle').style.display = 'inline-flex';
 
-            let extLinear = 0;
-            let extSegment = 0;
-            let minAddr = 0xFFFFFFFF;
-            let maxAddr = 0;
-            let maxEndAddr = 0;
-            let dataAtMinAddr = null;
-            let startLinearAddr = null;
-            let totalDataBytes = 0;
-            let checksumErrorCount = 0;
-            let isEofFound = false;
-            let validRecordCount = 0;
+            let extLinear = 0, extSegment = 0;
+            appState.minAddr = 0xFFFFFFFF; appState.maxAddr = 0; appState.maxEndAddr = 0;
+            appState.records = [];
+            let totalDataBytes = 0, checksumErrorCount = 0, validRecords = 0;
+            let startLinearAddr = null, isEof = false;
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                let tr = document.createElement('tr');
+            const baseBytesBuffer = new Uint8Array(64); // For vector table
+            let baseBytesFilled = 0;
+
+            lines.forEach((line, index) => {
+                const record = { index: index + 1, raw: line, valid: false, err: '', absoluteAddr: null };
                 
-                // 行号
-                let tdNum = document.createElement('td');
-                tdNum.textContent = i + 1;
-                tr.appendChild(tdNum);
-
-                if (!line.startsWith(':')) {
-                    tr.innerHTML += `<td colspan="4" class="invalid">无效行 (缺少':') - ${line}</td>`;
-                    tbody.appendChild(tr);
-                    continue;
-                }
-
-                validRecordCount++;
-
-                // 拆解结构
-                const mark = line.substring(0, 1);
-                const lenHex = line.substring(1, 3);
-                const addrHex = line.substring(3, 7);
-                const typeHex = line.substring(7, 9);
+                if (!line.startsWith(':')) { record.err = '缺少起始符 ":"'; appState.records.push(record); return; }
                 
+                const mark = ':', lenHex = line.slice(1, 3), addrHex = line.slice(3, 7), typeHex = line.slice(7, 9);
                 const len = parseInt(lenHex, 16);
-                
-                // 校验长度是否合理 (1 + 2 + 4 + 2 + len*2 + 2 = 11 + len*2 字符)
-                const expectedLineLength = 11 + len * 2;
-                if (line.length !== expectedLineLength) {
-                    tr.innerHTML += `<td colspan="4" class="invalid">行长度不匹配 - 期望 ${expectedLineLength} 字符, 实际 ${line.length}</td>`;
-                    tbody.appendChild(tr);
-                    continue;
-                }
+                if (line.length !== 11 + len * 2) { record.err = `长度不匹配`; appState.records.push(record); return; }
 
-                const dataHex = line.substring(9, 9 + len * 2);
-                const csumHex = line.substring(9 + len * 2, 11 + len * 2);
+                const dataHex = line.slice(9, 9 + len * 2);
+                const csumHex = line.slice(9 + len * 2, 11 + len * 2);
 
-                // 格式化展示片段
-                let tdCode = document.createElement('td');
-                tdCode.innerHTML = `
-                    <span class="c-mark" title="Record Mark">${mark}</span>
-                    <span class="c-len" title="Length (${len} bytes)">${lenHex}</span>
-                    <span class="c-addr" title="Offset">${addrHex}</span>
-                    <span class="c-type" title="Type">${typeHex}</span>
-                    <span class="c-data" title="Data/Payload">${dataHex}</span>
-                    <span class="c-csum" title="Checksum">${csumHex}</span>
-                `;
-                tr.appendChild(tdCode);
-
-                // 类型解释
-                let tdType = document.createElement('td');
-                tdType.textContent = RECORD_TYPES[typeHex] || `Unknown (${typeHex})`;
-                tr.appendChild(tdType);
-
-                // 校验和校验计算: 将从Length到Data的每一字节相加，然后取补码，应等于csumHex
-                let sum = parseInt(lenHex, 16) + (parseInt(addrHex.substring(0,2), 16) + parseInt(addrHex.substring(2,4), 16)) + parseInt(typeHex, 16);
-                for (let j = 0; j < dataHex.length; j += 2) {
-                    sum += parseInt(dataHex.substring(j, j+2), 16);
-                }
-                const calculatedCsum = (0x100 - (sum & 0xFF)) & 0xFF;
-                const isCsumValid = calculatedCsum === parseInt(csumHex, 16);
-                
+                let sum = len + parseInt(addrHex.slice(0,2),16) + parseInt(addrHex.slice(2,4),16) + parseInt(typeHex,16);
+                for (let j = 0; j < dataHex.length; j += 2) sum += parseInt(dataHex.slice(j, j+2), 16);
+                const calcCsum = (0x100 - (sum & 0xFF)) & 0xFF;
+                const isCsumValid = calcCsum === parseInt(csumHex, 16);
                 if (!isCsumValid) checksumErrorCount++;
 
-                // 逻辑处理
-                let computedAddrStr = "-";
-                if (typeHex === '02') {
-                    extSegment = parseInt(dataHex, 16);
-                } else if (typeHex === '04') {
-                    extLinear = parseInt(dataHex, 16);
-                } else if (typeHex === '05') {
-                    startLinearAddr = parseInt(dataHex, 16);
-                } else if (typeHex === '01') {
-                    isEofFound = true;
-                } else if (typeHex === '00') {
+                record.valid = true;
+                record.mark = mark; record.lenHex = lenHex; record.addrHex = addrHex;
+                record.typeHex = typeHex; record.dataHex = dataHex; record.csumHex = csumHex;
+                record.isCsumValid = isCsumValid; record.calcCsum = calcCsum;
+                record.len = len;
+
+                let offset = parseInt(addrHex, 16);
+                if (typeHex === '02') extSegment = parseInt(dataHex, 16);
+                else if (typeHex === '04') extLinear = parseInt(dataHex, 16);
+                else if (typeHex === '05') startLinearAddr = parseInt(dataHex, 16);
+                else if (typeHex === '01') isEof = true;
+                else if (typeHex === '00') {
                     totalDataBytes += len;
-                    // 计算绝对地址 (改用乘法防止32位有符号数移位溢出负数，特别是在0x80000000以上的高位地址)
-                    const offset = parseInt(addrHex, 16);
                     const absoluteAddr = (extLinear * 65536) + (extSegment * 16) + offset;
-                    computedAddrStr = "0x" + absoluteAddr.toString(16).toUpperCase().padStart(8, '0');
-                    
-                    // 将绝对地址和长度记录在 DOM 上供搜索使用
-                    tr.dataset.addr = absoluteAddr;
-                    tr.dataset.len = len;
+                    record.absoluteAddr = absoluteAddr;
 
-                    if (absoluteAddr < minAddr) {
-                        minAddr = absoluteAddr;
-                        dataAtMinAddr = dataHex;
-                    }
-                    if (absoluteAddr > maxAddr) {
-                        maxAddr = absoluteAddr;
-                    }
-                    if ((absoluteAddr + len - 1) > maxEndAddr) {
-                        maxEndAddr = absoluteAddr + len - 1;
+                    if (absoluteAddr < appState.minAddr) appState.minAddr = absoluteAddr;
+                    if (absoluteAddr > appState.maxAddr) appState.maxAddr = absoluteAddr;
+                    if (absoluteAddr + len - 1 > appState.maxEndAddr) appState.maxEndAddr = absoluteAddr + len - 1;
+
+                    // Collect first 64 bytes for Vector Table (ensure it maps relative to global min address)
+                    if (baseBytesFilled < 64) {
+                        for(let j=0; j<len; j++) {
+                            const absoluteByteAddr = absoluteAddr + j;
+                            // Check if it's within 64 bytes of minAddr or we just eagerly fill.
+                            // Usually, hex file isn't strictly sorted, but let's assume it roughly is.
+                            // Better logic: if absoluteByteAddr falls within minAddr and minAddr+64, we will update it later.
+                            // For simplicity, we just eagerly fill the first few bytes seen. In many cases this is 0x08000000.
+                        }
                     }
                 }
-
-                // 地址列
-                let tdAddr = document.createElement('td');
-                tdAddr.textContent = computedAddrStr;
-                tdAddr.className = "c-addr";
-                tr.appendChild(tdAddr);
-
-                // 检验结果列
-                let tdCsum = document.createElement('td');
-                if (isCsumValid) {
-                    tdCsum.innerHTML = `<span class="valid">✅ OK</span>`;
-                } else {
-                    tdCsum.innerHTML = `<span class="invalid">❌ Error (应为${calculatedCsum.toString(16).toUpperCase().padStart(2, '0')})</span>`;
-                }
-                tr.appendChild(tdCsum);
-
-                tbody.appendChild(tr);
+                
+                validRecords++;
+                appState.records.push(record);
+            });
+            
+            // Post-process to extract proper base bytes for vector table
+            baseBytesBuffer.fill(0);
+            if (appState.minAddr !== 0xFFFFFFFF) {
+                appState.records.forEach(r => {
+                    if (r.typeHex === '00' && r.absoluteAddr !== null) {
+                        for(let j=0; j<r.len; j++) {
+                            const offsetFromBase = (r.absoluteAddr + j) - appState.minAddr;
+                            if (offsetFromBase >= 0 && offsetFromBase < 64) {
+                                baseBytesBuffer[offsetFromBase] = parseInt(r.dataHex.slice(j*2, j*2+2), 16);
+                                baseBytesFilled = Math.max(baseBytesFilled, offsetFromBase + 1);
+                            }
+                        }
+                    }
+                });
             }
 
-            // 更新摘要面板
-            document.getElementById('resStatus').innerHTML = checksumErrorCount === 0 
-                ? `<span class="valid">✅ 完美 (0个校验错误) ${isEofFound ? '[包含EOF]' : '[无EOF]'}</span>`
-                : `<span class="invalid">❌ 发现 ${checksumErrorCount} 个校验错误</span>`;
-
-            const hasData = minAddr !== 0xFFFFFFFF;
-            document.getElementById('resBaseAddr').textContent = hasData 
-                ? "0x" + minAddr.toString(16).toUpperCase().padStart(8, '0')
-                : "未找到数据";
-
-            document.getElementById('resEndAddr').textContent = hasData 
-                ? "0x" + maxEndAddr.toString(16).toUpperCase().padStart(8, '0')
-                : "未找到数据";
-
-            document.getElementById('resEntryPoint').textContent = startLinearAddr !== null
-                ? "0x" + startLinearAddr.toString(16).toUpperCase().padStart(8, '0')
-                : "未提供 (无Type 05)";
-
-            // 栈指针推测 (小端模式取前4个字节)
-            if (hasData && dataAtMinAddr && dataAtMinAddr.length >= 8) {
-                const b0 = dataAtMinAddr.substring(0, 2);
-                const b1 = dataAtMinAddr.substring(2, 4);
-                const b2 = dataAtMinAddr.substring(4, 6);
-                const b3 = dataAtMinAddr.substring(6, 8);
-                document.getElementById('resStackPointer').textContent = `0x${b3}${b2}${b1}${b0}`;
+            // Update Summary
+            const statusBox = document.getElementById('statusBox');
+            if (checksumErrorCount === 0) {
+                document.getElementById('resStatus').innerHTML = `<span class="valid">✅ 完美 (0错误) ${isEof?'[含EOF]':''}</span>`;
+                statusBox.className = 'stat-box status-perfect';
             } else {
-                document.getElementById('resStackPointer').textContent = "数据不足或未找到基址数据";
+                document.getElementById('resStatus').innerHTML = `<span class="invalid">❌ ${checksumErrorCount} 校验错误</span>`;
+                statusBox.className = 'stat-box status-error';
             }
 
-            document.getElementById('resTotalSize').textContent = totalDataBytes.toLocaleString() + " 字节";
-            document.getElementById('resTotalRecords').textContent = validRecordCount.toLocaleString() + " 条";
+            const hasData = appState.minAddr !== 0xFFFFFFFF;
+            document.getElementById('resBaseAddr').textContent = hasData ? "0x" + appState.minAddr.toString(16).toUpperCase().padStart(8, '0') : "-";
+            document.getElementById('resEndAddr').textContent = hasData ? "0x" + appState.maxEndAddr.toString(16).toUpperCase().padStart(8, '0') : "-";
+            document.getElementById('resEntryPoint').textContent = startLinearAddr !== null ? "0x" + startLinearAddr.toString(16).toUpperCase().padStart(8, '0') : "-";
+            document.getElementById('resTotalSize').textContent = totalDataBytes.toLocaleString() + " Bytes";
+            document.getElementById('resTotalRecords').textContent = validRecords.toLocaleString();
+
+            buildMemoryMap();
+            buildVectorTable(baseBytesBuffer, baseBytesFilled);
+            
+            appState.currentPage = 1;
+            appState.totalPages = Math.ceil(appState.records.length / appState.pageSize) || 1;
+            renderTable();
         }
 
-        function searchAddress() {
-            let query = document.getElementById('addressSearch').value.trim();
-            if (!query) {
-                showToast("请输入需要搜索的地址！", "warning");
-                return;
+        function formatDataString(hexStr) {
+            if (appState.displayMode === 'hex') {
+                return hexStr.match(/.{1,2}/g)?.join(' ') || hexStr;
+            } else {
+                let ascii = '';
+                for (let i = 0; i < hexStr.length; i += 2) {
+                    const code = parseInt(hexStr.slice(i, i+2), 16);
+                    ascii += (code >= 32 && code <= 126) ? String.fromCharCode(code) : '.';
+                }
+                return `<span style="color: var(--primary-color);">${ascii.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`;
             }
-            if (query.toLowerCase().startsWith('0x')) {
-                query = query.substring(2);
-            }
+        }
+
+        function toggleDataMode(mode) {
+            appState.displayMode = mode;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
             
-            // 严格的格式验证：必须是纯粹的十六进制字符，防止如 "1000g" 被 parseInt 容错解析而导致误匹配
-            if (!/^[0-9a-fA-F]+$/.test(query)) {
-                showToast("请输入有效的十六进制地址！", "warning");
-                return;
-            }
+            const startIdx = (appState.currentPage - 1) * appState.pageSize;
+            const endIdx = Math.min(startIdx + appState.pageSize, appState.records.length);
             
-            const searchAddr = parseInt(query, 16);
-            if (isNaN(searchAddr)) {
-                showToast("请输入有效的十六进制地址！", "warning");
-                return;
-            }
-
-            // 清除旧的搜索高亮
-            document.querySelectorAll('.highlight-row, .closest-highlight-row').forEach(tr => {
-                tr.classList.remove('highlight-row', 'closest-highlight-row');
-            });
-
-            const rows = document.querySelectorAll('#tableBody tr');
-            let exactMatchFound = false;
-            let closestRow = null;
-            let minDistance = Infinity;
-            let closestAddr = -1;
-
-            for (let tr of rows) {
-                if (tr.dataset.addr && tr.dataset.len) {
-                    const startAddr = parseInt(tr.dataset.addr, 10);
-                    const length = parseInt(tr.dataset.len, 10);
+            for (let i = startIdx; i < endIdx; i++) {
+                const rec = appState.records[i];
+                const tr = document.createElement('tr');
+                tr.id = `row-${i}`;
+                
+                if (!rec.valid) {
+                    tr.innerHTML = `<td>${rec.index}</td><td colspan="4" class="invalid">${rec.err} - ${rec.raw}</td>`;
+                } else {
+                    const addrStr = rec.absoluteAddr !== null ? "0x" + rec.absoluteAddr.toString(16).toUpperCase().padStart(8, '0') : "-";
+                    const dataDisplay = rec.typeHex === '00' ? formatDataString(rec.dataHex) : rec.dataHex;
                     
-                    if (searchAddr >= startAddr && searchAddr < startAddr + length) {
-                        // 找到该地址所在的数据行，精确匹配
-                        tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        tr.classList.add('highlight-row');
-                        setTimeout(() => tr.classList.remove('highlight-row'), 2500);
-                        exactMatchFound = true;
-                        
-                        // 优化精确匹配提示：区分是刚好对应行首地址，还是包含在这一行的内部偏移数据里
-                        const offsetInRow = searchAddr - startAddr;
-                        const hexFormatted = searchAddr.toString(16).toUpperCase();
-                        if (offsetInRow === 0) {
-                            showToast(`已成功定位到行首地址 [0x${hexFormatted}]！`, "success");
-                        } else {
-                            showToast(`已成功定位到地址 [0x${hexFormatted}]！该地址位于数据行 0x${startAddr.toString(16).toUpperCase().padStart(8, '0')} 内第 ${offsetInRow + 1} 字节`, "success");
-                        }
+                    tr.innerHTML = `
+                        <td>${rec.index}</td>
+                        <td>
+                            <span class="c-mark">${rec.mark}</span><span class="c-len">${rec.lenHex}</span><span class="c-addr">${rec.addrHex}</span><span class="c-type">${rec.typeHex}</span><span class="c-data">${dataDisplay}</span><span class="c-csum">${rec.csumHex}</span>
+                        </td>
+                        <td>${RECORD_TYPES[rec.typeHex] || 'Unknown'}</td>
+                        <td class="c-addr">${addrStr}</td>
+                        <td>${rec.isCsumValid ? '<span class="valid">✅ OK</span>' : `<span class="invalid">❌ (${rec.calcCsum.toString(16).toUpperCase().padStart(2,'0')})</span>`}</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            }
+            
+            document.getElementById('pageInfo').textContent = `第 ${appState.currentPage} 页 / 共 ${appState.totalPages} 页`;
+            document.getElementById('pageJump').value = appState.currentPage;
+            document.getElementById('btnPrev').disabled = appState.currentPage === 1;
+            document.getElementById('btnNext').disabled = appState.currentPage === appState.totalPages;
+        }
+
+        function changePage(delta) {
+            let newPage = appState.currentPage + delta;
+            if (newPage >= 1 && newPage <= appState.totalPages) {
+                appState.currentPage = newPage;
+                renderTable();
+                document.getElementById('tableContainer').scrollTop = 0;
+            }
+        }
+
+        function jumpPage() {
+            let val = parseInt(document.getElementById('pageJump').value);
+            if (!isNaN(val) && val >= 1 && val <= appState.totalPages) {
+                appState.currentPage = val;
+                renderTable();
+                document.getElementById('tableContainer').scrollTop = 0;
+            } else {
+                showToast(`页码超出范围 (1 - ${appState.totalPages})`, "warning");
+            }
+        }
+
+        // Memory Map with Custom Tooltip
+        function buildMemoryMap() {
+            const container = document.getElementById('memoryMapContainer');
+            if (appState.minAddr === 0xFFFFFFFF) { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+            document.getElementById('mapStartAddr').textContent = "0x" + appState.minAddr.toString(16).toUpperCase().padStart(8, '0');
+            document.getElementById('mapEndAddr').textContent = "0x" + appState.maxEndAddr.toString(16).toUpperCase().padStart(8, '0');
+
+            let blocks = appState.records.filter(r => r.absoluteAddr !== null).map(r => ({ start: r.absoluteAddr, len: r.len }));
+            blocks.sort((a, b) => a.start - b.start);
+
+            let merged = [];
+            if (blocks.length > 0) {
+                let curr = { start: blocks[0].start, end: blocks[0].start + blocks[0].len - 1 };
+                for (let i = 1; i < blocks.length; i++) {
+                    let b = blocks[i], bEnd = b.start + b.len - 1;
+                    if (b.start <= curr.end + 1) curr.end = Math.max(curr.end, bEnd);
+                    else { merged.push(curr); curr = { start: b.start, end: bEnd }; }
+                }
+                merged.push(curr);
+            }
+            appState.dataBlocks = merged;
+
+            const mapBar = document.getElementById('memoryMapBar');
+            mapBar.innerHTML = '';
+            const totalRange = appState.maxEndAddr - appState.minAddr + 1;
+            const tooltip = document.getElementById('customTooltip');
+
+            merged.forEach(seg => {
+                let leftPercent = ((seg.start - appState.minAddr) / totalRange) * 100;
+                let widthPercent = ((seg.end - seg.start + 1) / totalRange) * 100;
+                if (widthPercent > 0 && widthPercent < 0.2) widthPercent = 0.2; 
+
+                const div = document.createElement('div');
+                div.className = 'memory-segment';
+                div.style.left = leftPercent + '%';
+                div.style.width = widthPercent + '%';
+
+                const tipText = `起始: 0x${seg.start.toString(16).toUpperCase().padStart(8, '0')}\n结束: 0x${seg.end.toString(16).toUpperCase().padStart(8, '0')}\n大小: ${(seg.end - seg.start + 1).toLocaleString()} B`;
+
+                div.addEventListener('mousemove', (e) => {
+                    tooltip.style.opacity = '1';
+                    tooltip.textContent = tipText;
+                    tooltip.style.left = e.clientX + 'px';
+                    tooltip.style.top = (e.clientY - 15) + 'px';
+                });
+                div.addEventListener('mouseleave', () => tooltip.style.opacity = '0');
+                mapBar.appendChild(div);
+            });
+        }
+
+        // Vector Table Parse
+        function buildVectorTable(buffer, filledLen) {
+            const container = document.getElementById('vectorTableContainer');
+            if (filledLen < 8) { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+
+            const content = document.getElementById('vectorContent');
+            content.innerHTML = '';
+            const dataView = new DataView(buffer.buffer);
+            
+            for(let i=0; i<Math.min(filledLen, 64); i+=4) {
+                if (i+4 > filledLen) break;
+                // Little Endian Cortex-M
+                const val = dataView.getUint32(i, true);
+                const name = VECTOR_NAMES[i/4] || `IRQ_${i/4 - 16}`;
+                const div = document.createElement('div');
+                div.className = 'vector-item';
+                div.innerHTML = `<span style="color:var(--type-color)">${name.padEnd(20, ' ')}</span> : <span style="color:var(--text-color)">0x${val.toString(16).toUpperCase().padStart(8, '0')}</span>`;
+                content.appendChild(div);
+            }
+        }
+
+        function toggleVectorTable() {
+            const content = document.getElementById('vectorContent');
+            const chev = document.getElementById('vectorChevron');
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                chev.textContent = '▼';
+            } else {
+                content.classList.add('open');
+                chev.textContent = '▲';
+            }
+        }
+
+        // Search Cross-Page Logic
+        function searchAddress() {
+            const searchInput = document.getElementById('addressSearch');
+            let query = searchInput.value.trim();
+            searchInput.classList.remove('error');
+
+            if (!query || !/^(0x)?[0-9a-fA-F]+$/.test(query)) {
+                showToast("请输入有效的十六进制地址！", "warning");
+                searchInput.classList.add('error');
+                return;
+            }
+            if (query.toLowerCase().startsWith('0x')) query = query.slice(2);
+            const searchAddr = parseInt(query, 16);
+
+            let exactRecIndex = -1;
+            let closestRecIndex = -1;
+            let minDistance = Infinity;
+
+            for (let i = 0; i < appState.records.length; i++) {
+                const rec = appState.records[i];
+                if (rec.absoluteAddr !== null) {
+                    if (searchAddr >= rec.absoluteAddr && searchAddr < rec.absoluteAddr + rec.len) {
+                        exactRecIndex = i;
                         break;
-                    } else {
-                        // 记录距离，以便模糊匹配
-                        const distStart = Math.abs(startAddr - searchAddr);
-                        const distEnd = Math.abs((startAddr + length - 1) - searchAddr);
-                        const dist = Math.min(distStart, distEnd);
+                    }
+                    const distStart = Math.abs(rec.absoluteAddr - searchAddr);
+                    const distEnd = Math.abs((rec.absoluteAddr + rec.len - 1) - searchAddr);
+                    const dist = Math.min(distStart, distEnd);
+                    if (dist < minDistance) { minDistance = dist; closestRecIndex = i; }
+                }
+            }
+
+            let targetIndex = exactRecIndex !== -1 ? exactRecIndex : closestRecIndex;
+            if (targetIndex !== -1) {
+                const targetPage = Math.floor(targetIndex / appState.pageSize) + 1;
+                if (appState.currentPage !== targetPage) {
+                    appState.currentPage = targetPage;
+                    renderTable();
+                }
+                
+                // Highlight and scroll
+                setTimeout(() => {
+                    const row = document.getElementById(`row-${targetIndex}`);
+                    if (row) {
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        row.classList.add('highlight-row');
+                        setTimeout(() => row.classList.remove('highlight-row'), 2000);
                         
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            closestRow = tr;
-                            closestAddr = startAddr;
+                        const addrHexStr = searchAddr.toString(16).toUpperCase();
+                        if (exactRecIndex !== -1) {
+                            showToast(`成功定位到地址 [0x${addrHexStr}]`, "success");
+                        } else {
+                            showToast(`未找到确切地址，已跳转至最近的相邻区域`, "warning");
                         }
                     }
-                }
+                }, 50); // slight delay to allow render
+            } else {
+                showToast("未找到任何有效数据记录", "error");
+            }
+        }
+
+        // Export BIN
+        function exportBin() {
+            if (!appState.dataBlocks.length) { showToast("无有效数据可导出", "error"); return; }
+            
+            const totalBytes = appState.maxEndAddr - appState.minAddr + 1;
+            if (totalBytes > 1024 * 1024 * 32) { // limit 32MB 
+                showToast("内存跨度过大(>32MB)，为防止浏览器崩溃，暂停直接导出。请检查 HEX 段是否合理。", "error");
+                return;
             }
 
-            if (!exactMatchFound) {
-                if (closestRow) {
-                    const hexFormatted = searchAddr.toString(16).toUpperCase();
-                    const nearestHex = closestAddr.toString(16).toUpperCase().padStart(8, '0');
-                    showToast(`未找到该精确地址 [0x${hexFormatted}]，已跳转到附近的最近数据区域: 0x${nearestHex}`, "warning");
-                    closestRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    closestRow.classList.add('closest-highlight-row'); // 使用淡黄色进行模糊匹配高亮，防止与精确匹配混淆
-                    setTimeout(() => closestRow.classList.remove('closest-highlight-row'), 2500);
-                } else {
-                    showToast("在解析的数据区域中未找到该地址对应的数据，且无有效数据供跳转。", "error");
+            const buffer = new Uint8Array(totalBytes);
+            buffer.fill(0xFF); // Default padding is usually 0xFF for flash
+
+            appState.records.forEach(rec => {
+                if (rec.typeHex === '00' && rec.absoluteAddr !== null) {
+                    const offset = rec.absoluteAddr - appState.minAddr;
+                    for (let i = 0; i < rec.len; i++) {
+                        buffer[offset + i] = parseInt(rec.dataHex.slice(i*2, i*2+2), 16);
+                    }
                 }
-            }
+            });
+
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `firmware_0x${appState.minAddr.toString(16).toUpperCase()}.bin`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("BIN 文件已开始下载", "success");
         }
     </script>
 </body>
