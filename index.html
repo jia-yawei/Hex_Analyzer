@@ -1051,8 +1051,9 @@
             const staticVar = mapData.rwData + mapData.ziData;
             const dynVar = mapData.heapSize + mapData.stackSize;
             let freeRam = isCustom ? 0 : ramSize - totalRamUsed;
+            let pct = isCustom ? 100 : (totalRamUsed / ramSize) * 100;
             
-            statusEl.textContent = `静态全局变量 (RW+ZI): ${(staticVar/1024).toFixed(2)} KB | 系统堆栈分配 (Heap+Stack): ${(dynVar/1024).toFixed(2)} KB | 真实剩余可分配 RAM: ${(freeRam/1024).toFixed(2)} KB`;
+            statusEl.textContent = `静态全局变量 (RW+ZI): ${(staticVar/1024).toFixed(2)} KB | 系统堆栈分配 (Heap+Stack): ${(dynVar/1024).toFixed(2)} KB | 真实剩余可分配 RAM: ${(freeRam/1024).toFixed(2)} KB (占用率: ${pct.toFixed(2)}%)`;
         }
 
         // Vector Table Parse
